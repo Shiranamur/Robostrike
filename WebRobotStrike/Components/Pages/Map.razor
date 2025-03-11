@@ -1,0 +1,137 @@
+@page "/map"
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using System.IO
+@inject IJSRuntime JS
+
+<h3>Map</h3>
+@if (mapTotal != null)
+{
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            Map Information
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Width:</strong> @mapTotal.MapWidth
+                </div>
+                <div class="col-md-4">
+                    <strong>Height:</strong> @mapTotal.MapHeight
+                </div>
+                <div class="col-md-4">
+                    <strong>Tiles:</strong> @(mapTotal.Tiles?.Count ?? 0)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="map-container p-2 border rounded">
+        @for (int y = 0; y < mapTotal.MapHeight; y++)
+        {
+            <div class="row g-0">
+                @for (int x = 0; x < mapTotal.MapWidth; x++)
+                {
+                    var tile = mapTotal.Tiles.FirstOrDefault(t => t.PosX == x && t.PosY == y);
+                    if (tile != null)
+                    {
+                        <div class="col p-0">
+                            <img src="@GetTileImagePath(tile.Type)"
+                                 class="tile lazy"
+                                 alt="@tile.Type"
+                                 data-bs-toggle="tooltip"
+                                 title="X: @tile.PosX, Y: @tile.PosY, Type: @tile.Type"
+                                 loading="lazy" />
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    <style>
+        .map-container {
+            width: fit-content;
+        }
+        .tile {
+            width: 50px;
+            height: 50px;
+            margin: 1px;
+        }
+    </style>
+}
+else
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+
+@code {
+    private MapTotal mapTotal;
+    private string filePath = "../Map/map_test.json";
+
+    protected override async Task OnInitializedAsync()
+    {
+        mapTotal = await JsonParser.ParseJsonAsync(filePath);
+        Console.Write($"{filePath} \n{mapTotal}\n");
+        Console.WriteLine($"Map height: {mapTotal.MapHeight}");
+        Console.WriteLine($"Map Width: {mapTotal.MapWidth}");
+        Console.WriteLine($"Map tiles: {mapTotal.Tiles?.Count}");
+    }
+
+    private string GetTileImagePath(string tileType)
+    {
+        // Maps each tile type to its corresponding image
+        return $"images/tiles/{tileType.ToLowerInvariant()}.png";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("enableTooltips");
+        }
+    }
+
+    public class MapCase
+    {
+        [JsonPropertyName("x")]
+        public int PosX { get; set; }
+
+        [JsonPropertyName("y")]
+        public int PosY { get; set; }
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+    }
+
+    public class MapTotal
+    {
+        [JsonPropertyName("map_width")]
+        public int MapWidth { get; set; }
+
+        [JsonPropertyName("map_height")]
+        public int MapHeight { get; set; }
+
+        [JsonPropertyName("tiles")]
+        public List<MapCase> Tiles { get; set; }
+    }
+
+    public static class JsonParser
+    {
+        public static async Task<MapTotal> ParseJsonAsync(string filepath)
+        {
+            string jsonString = await File.ReadAllTextAsync(filepath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = false
+            };
+
+            MapTotal mapTotal = JsonSerializer.Deserialize<MapTotal>(jsonString, options);
+            return mapTotal;
+        }
+    }
+}
