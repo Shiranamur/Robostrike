@@ -60,7 +60,7 @@ namespace tiz_teh_final_csharp_project
                     continue;
                 }
                 
-                player.Move(1, Map);
+                player.Move(1, map);
                 Console.WriteLine($"Player {player.id} moved to ({player.x}, {player.y})");
             }
         }
