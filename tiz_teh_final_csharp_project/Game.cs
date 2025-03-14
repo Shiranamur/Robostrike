@@ -60,6 +60,8 @@ namespace tiz_teh_final_csharp_project
             map.printMap(Players);
             foreach (var player in Players)
             {
+                player.xA = player.x;
+                player.yA = player.y;
                 if (player == null)
                 {
                     Console.WriteLine("Game: A player in the list is null.");
@@ -72,8 +74,23 @@ namespace tiz_teh_final_csharp_project
                 foreach (var player in Players)
                 {
                     player.ReadInput(player.inputs[j], map);
+                    foreach(var qPlayer in Players)
+                    {
+                        foreach(var wPlayer in Players)
+                        {
+                            if (wPlayer.x == qPlayer.x && wPlayer.y == qPlayer.y && wPlayer.id != qPlayer.id)
+                            {
+                                qPlayer.HandleCollision(wPlayer,qPlayer);
+                            }
+                        }
+                    }
+                    player.xA = player.x;
+                    player.yA = player.y;    
                 }
+             
                 map.printMap(Players);
+                Console.WriteLine("enter anything to continue");
+                Console.ReadLine();
             }
         }
     }
