@@ -1,0 +1,22 @@
+@page "/map/editor"
+<h3>MapEditor</h3>
+
+<label for="MapSize">Choose a MapSize:</label>
+<select name="MapSize" id="MapSize">
+    <option value="">Please select a value</option>
+    <option value="10">10*10</option>
+    <option value="15">15*15</option>
+    <option value="20">20*20</option>
+</select>
+<h1>Favorite Color</h1>
+<input type="text" @bind="favoriteColor" @oninput="UpdateColor" placeholder="Enter color..." />
+<p>Your color is : @favoriteColor</p>
+@code {
+    private string favoriteColor = string.Empty;
+
+    private void UpdateColor(ChangeEventArgs e)
+    {
+        favoriteColor = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+}
