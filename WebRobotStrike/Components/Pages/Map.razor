@@ -5,7 +5,7 @@
 @inject IJSRuntime JS
 
 <h3>Map</h3>
-@if (mapTotal != null)
+@if (_mapTotal != null)
 {
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -14,25 +14,25 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-4">
-                    <strong>Width:</strong> @mapTotal.MapWidth
+                    <strong>Width:</strong> @_mapTotal.MapWidth
                 </div>
                 <div class="col-md-4">
-                    <strong>Height:</strong> @mapTotal.MapHeight
+                    <strong>Height:</strong> @_mapTotal.MapHeight
                 </div>
                 <div class="col-md-4">
-                    <strong>Tiles:</strong> @(mapTotal.Tiles?.Count ?? 0)
+                    <strong>Tiles:</strong> @_mapTotal.Tiles.Count
                 </div>
             </div>
         </div>
     </div>
 
     <div class="map-container p-2 border rounded">
-        @for (int y = 0; y < mapTotal.MapHeight; y++)
+        @for (int y = 0; y < _mapTotal.MapHeight; y++)
         {
             <div class="row g-0">
-                @for (int x = 0; x < mapTotal.MapWidth; x++)
+                @for (int x = 0; x < _mapTotal.MapWidth; x++)
                 {
-                    var tile = mapTotal.Tiles.FirstOrDefault(t => t.PosX == x && t.PosY == y);
+                    var tile = _mapTotal.Tiles?.FirstOrDefault(t => t.PosX == x && t.PosY == y);
                     if (tile != null)
                     {
                         <div class="col p-0">
@@ -70,16 +70,16 @@ else
 }
 
 @code {
-    private MapTotal mapTotal;
-    private string filePath = "../Map/map_test.json";
+    private MapTotal? _mapTotal;
+    private readonly string _filePath = "../Map/map_test.json";
 
     protected override async Task OnInitializedAsync()
     {
-        mapTotal = await JsonParser.ParseJsonAsync(filePath);
-        Console.Write($"{filePath} \n{mapTotal}\n");
-        Console.WriteLine($"Map height: {mapTotal.MapHeight}");
-        Console.WriteLine($"Map Width: {mapTotal.MapWidth}");
-        Console.WriteLine($"Map tiles: {mapTotal.Tiles?.Count}");
+        _mapTotal = await JsonParser.ParseJsonAsync(_filePath);
+        Console.Write($"{_filePath} \n{_mapTotal}\n");
+        Console.WriteLine($"Map height: {_mapTotal.MapHeight}");
+        Console.WriteLine($"Map Width: {_mapTotal.MapWidth}");
+        Console.WriteLine($"Map tiles: {_mapTotal.Tiles.Count}");
     }
 
     private string GetTileImagePath(string tileType)
@@ -105,19 +105,20 @@ else
         public int PosY { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public required string Type { get; set; }
     }
+
 
     public class MapTotal
     {
         [JsonPropertyName("map_width")]
-        public int MapWidth { get; set; }
+        public int MapWidth { get; init; }
 
         [JsonPropertyName("map_height")]
-        public int MapHeight { get; set; }
+        public int MapHeight { get; init; }
 
         [JsonPropertyName("tiles")]
-        public List<MapCase> Tiles { get; set; }
+        public List<MapCase> Tiles { get; init; } = [];
     }
 
     public static class JsonParser
@@ -130,8 +131,8 @@ else
                 PropertyNameCaseInsensitive = false
             };
 
-            MapTotal mapTotal = JsonSerializer.Deserialize<MapTotal>(jsonString, options);
-            return mapTotal;
+            MapTotal? mapTotal = JsonSerializer.Deserialize<MapTotal>(jsonString, options);
+            return mapTotal ?? new MapTotal();
         }
     }
 }
