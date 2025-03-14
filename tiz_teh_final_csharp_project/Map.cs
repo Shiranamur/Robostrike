@@ -18,13 +18,6 @@ namespace tiz_teh_final_csharp_project
             this.tiles = tiles;
         }
 
-        public Map(int width, int height, List<Tile> tiles)
-        {
-            Width = width;
-            Height = height;
-            this.tiles = tiles;
-        }
-
         public bool isValidMove(int x, int y)
         {
             if (tiles == null)
@@ -32,12 +25,7 @@ namespace tiz_teh_final_csharp_project
                 Console.WriteLine("Map: Tiles list is null!");
                 return false;
             }
-<<<<<<< Updated upstream
-            
-            Console.WriteLine($"w: {Width}, H: {Height}");
-=======
             Console.WriteLine("x " + Width + "y " + Height + "x " + x + "y " + y);
->>>>>>> Stashed changes
             bool isInBounds = x >= 0 && x < Width && y >= 0 && y < Height;
             Console.WriteLine($"Map: Checking move to ({x}, {y}). Is within bounds? {isInBounds}");
 

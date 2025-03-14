@@ -4,7 +4,7 @@ namespace tiz_teh_final_csharp_project
 {
     public class Game
     {
-        public Map Map { get; set; }
+        public Map map { get; set; }
         public List<Player> Players { get; set; }
 
         public Game(string mapFile, List<Player> players)
@@ -16,16 +16,9 @@ namespace tiz_teh_final_csharp_project
             }
             
             string json = File.ReadAllText(mapFile);
-<<<<<<< Updated upstream
-            Map map = JsonSerializer.Deserialize<Map>(json);
+            map = JsonSerializer.Deserialize<Map>(json);
 
             if (map != null)
-=======
-            Map = JsonSerializer.Deserialize<Map>(json);
-            Console.WriteLine(Map.tiles[0].Type);
-            
-            if (Map == null)
->>>>>>> Stashed changes
             {
                 Console.WriteLine($"Map initialized with Width: {map.Width}, Height: {map.Height}, Tiles: {map.tiles.Count}");
             }
@@ -48,7 +41,7 @@ namespace tiz_teh_final_csharp_project
 
         public void StartGame()
         {
-            if (Map == null)
+            if (map == null)
             {
                 Console.WriteLine("Game: Map is null in startGame.");
                 return;
