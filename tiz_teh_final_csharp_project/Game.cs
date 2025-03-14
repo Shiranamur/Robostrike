@@ -16,13 +16,17 @@ namespace tiz_teh_final_csharp_project
             }
             
             string json = File.ReadAllText(mapFile);
-            Map = JsonSerializer.Deserialize<Map>(json);
-            
-            if (Map == null)
+            Map map = JsonSerializer.Deserialize<Map>(json);
+
+            if (map != null)
             {
-                Console.WriteLine("Game: Failed to deserialize map.");
-                return;
+                Console.WriteLine($"Map initialized with Width: {map.Width}, Height: {map.Height}, Tiles: {map.tiles.Count}");
             }
+            else
+            {
+                Console.WriteLine("Failed to deserialize map.");
+            }
+
             
             if (players == null)
             {

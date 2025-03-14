@@ -1,8 +1,16 @@
-namespace tiz_teh_final_csharp_project;
+using System.Text.Json.Serialization;
 
-public class Tile
+namespace tiz_teh_final_csharp_project
 {
-    public int X { get; set; }
-    public int Y { get; set; }
-    public string Type { get; set; }
+    public class Tile
+    {
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+    }
 }
