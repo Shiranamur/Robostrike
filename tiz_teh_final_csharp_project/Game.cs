@@ -16,9 +16,16 @@ namespace tiz_teh_final_csharp_project
             }
             
             string json = File.ReadAllText(mapFile);
+<<<<<<< Updated upstream
             Map map = JsonSerializer.Deserialize<Map>(json);
 
             if (map != null)
+=======
+            Map = JsonSerializer.Deserialize<Map>(json);
+            Console.WriteLine(Map.tiles[0].Type);
+            
+            if (Map == null)
+>>>>>>> Stashed changes
             {
                 Console.WriteLine($"Map initialized with Width: {map.Width}, Height: {map.Height}, Tiles: {map.tiles.Count}");
             }
@@ -39,7 +46,7 @@ namespace tiz_teh_final_csharp_project
             Console.WriteLine($"Game: Initialized with {Players.Count} players.");
         }
 
-        public void startGame()
+        public void StartGame()
         {
             if (Map == null)
             {
@@ -60,7 +67,7 @@ namespace tiz_teh_final_csharp_project
                     continue;
                 }
                 
-                player.Move(player.x + 1, player.y, Map);
+                player.Move(1, Map);
                 Console.WriteLine($"Player {player.id} moved to ({player.x}, {player.y})");
             }
         }
