@@ -52,6 +52,12 @@ namespace tiz_teh_final_csharp_project
                 return;
             }
 
+            GameLoop();
+
+        }
+        public void GameLoop()
+        {
+            map.printMap(Players);
             foreach (var player in Players)
             {
                 if (player == null)
@@ -59,9 +65,15 @@ namespace tiz_teh_final_csharp_project
                     Console.WriteLine("Game: A player in the list is null.");
                     continue;
                 }
-                
-                player.Move(1, map);
-                Console.WriteLine($"Player {player.id} moved to ({player.x}, {player.y})");
+                player.inputs = player.EnterInput(player);
+            }
+            for (int j = 0; j < 6; j++)
+            {
+                foreach (var player in Players)
+                {
+                    player.ReadInput(player.inputs[j], map);
+                }
+                map.printMap(Players);
             }
         }
     }

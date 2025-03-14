@@ -10,7 +10,7 @@ namespace tiz_teh_final_csharp_project
         [JsonPropertyName("y")]
         public int Y { get; set; }
 
-        [JsonPropertyName("type")]
+        [JsonPropertyName("Type")]
         public string Type { get; set; }
     }
 }

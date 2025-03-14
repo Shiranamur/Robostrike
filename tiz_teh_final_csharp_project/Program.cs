@@ -14,8 +14,8 @@ public class Program
         Console.WriteLine(currentDir, fullMapFilePath);
         List<Player> players = new List<Player>
         {
-            new Player { id = 1, x = 0, y = 0, direction = 'E'},
-            new Player { id = 2, x = 9, y = 9, direction = 'N'}
+            new Player { id = 1, x = 0, y = 0, direction = 'S', inputs = " "},
+            new Player { id = 2, x = 9, y = 9, direction = 'N', inputs = " "}
         };
         
         Game game = new Game(mapFilePath, players);
