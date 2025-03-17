@@ -13,4 +13,5 @@ namespace tiz_teh_final_csharp_project
         [JsonPropertyName("Type")]
         public string Type { get; set; }
     }
+    
 }

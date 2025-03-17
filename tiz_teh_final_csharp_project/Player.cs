@@ -14,7 +14,6 @@ namespace tiz_teh_final_csharp_project
         public int push = 0;
         public char pushDirection;
 
-
         public void MoveForward(Map carte)
         {
             int newX = x;
@@ -51,9 +50,11 @@ namespace tiz_teh_final_csharp_project
 
             if (isValid)
             {
+                xA = x;
+                yA = y;
                 x = newX;
                 y = newY;
-                Console.WriteLine($"Player {id}: Successfully moved forward to ({x}, {y})");
+                Console.WriteLine($"Player {id}: Successfully moved pos forward to ({x}, {y})");
             }
             else
             {
@@ -156,6 +157,8 @@ namespace tiz_teh_final_csharp_project
 
             if (isValid)
             {
+                xA = x;
+                yA = y;
                 x = newX;
                 y = newY;
                 Console.WriteLine($"Player {id}: Successfully moved backwards to ({x}, {y})");
@@ -197,30 +200,68 @@ namespace tiz_teh_final_csharp_project
             
         }
 
-        public void HandleCollision(Player player1, Player player2)
+        public void HandleCollision(Player player1, Player player2, Map carte)
         {
             if (player1.push > player2.push && player2.push == 0)
             {
                 if (player1.pushDirection == 'N')
                 {
-                    player2.y += -1;
+                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    if (isValid)
+                    {
+                        player2.y += -1;
+                    }
+                    else
+                    {
+                        player1.x = player1.xA;
+                        player1.y = player1.yA;
+                    }
                 }
                 else if (player1.pushDirection == 'E')
                 {
-                    player2.x += 1;
+                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    if (isValid)
+                    {
+                        player2.x += 1;
+                    }
+                    else
+                    {
+                        player1.x = player1.xA;
+                        player1.y = player1.yA;
+                    }
                 }
                 else if (player1.pushDirection == 'W')
                 {
-                    player2.x += -1;
+                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    if (isValid)
+                    {
+                        player2.x += -1;
+                    }
+                    else
+                    {
+                        player1.x = player1.xA;
+                        player1.y = player1.yA;
+                    }
                 }
                 else if (player1.pushDirection == 'S')
                 {
-                    player2.y += 1;
+                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    if (isValid)
+                    {
+                        player2.y += 1;
+                    }
+                    else
+                    {
+                        player1.x = player1.xA;
+                        player1.y = player1.yA;
+                    }
                 }
+                Console.WriteLine("Pushed once");
 
             }
             else if (player1.push == player2.push)
             {
+
                 player1.x = player1.xA;
                 player1.y = player1.yA;
                 player2.x = player2.xA;
