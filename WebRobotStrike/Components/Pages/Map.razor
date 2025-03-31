@@ -2,7 +2,7 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using System.IO
-@inject IJSRuntime JS
+@inject IJSRuntime JsRuntime
 
 <h3>Map</h3>
 @if (_mapTotal != null)
@@ -92,7 +92,7 @@ else
     {
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("enableTooltips");
+            await JsRuntime.InvokeVoidAsync("enableTooltips");
         }
     }
 
