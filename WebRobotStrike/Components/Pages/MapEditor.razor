@@ -67,7 +67,7 @@
                             var type = tileType; // Capture the variable for the lambda
                             <div class="tile-selector-item @(selectedTileType == type ? "selected" : "")"
                                  @onclick="() => SelectTileType(type)" >
-                                <img src="images/tiles/@(type).png"
+                                <img src="images/Tiles/@(type).png"
                                      class="tile-option"
                                      alt="@type"
                                      title="@ToUpperFirst(type)"
@@ -148,7 +148,7 @@
     private MapTotal? mapData;
     private string selectedTileType = "void";
     private bool isPainting = false;
-    private List<string> availableTileTypes = new() { "void", "normal", "wall" };
+    private List<string> availableTileTypes = new() { "void", "normal", "wall", "bonus_on", "spawn_tile" };
 
     protected override Task OnAfterRenderAsync(bool firstRender)
     {

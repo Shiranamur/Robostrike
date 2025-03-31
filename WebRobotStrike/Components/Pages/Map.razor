@@ -1,11 +1,49 @@
 @page "/map"
+@rendermode InteractiveServer
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using System.IO
 @inject IJSRuntime JsRuntime
 
 <h3>Map</h3>
-@if (_mapTotal != null)
+
+<div class="card-body">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <h5>Upload JSON File</h5>
+            <div class="input-group">
+                <InputFile OnChange="HandleFileSelection" accept=".json" class="form-control" />
+                <button type="button" class="btn btn-primary" @onclick="ProcessSelectedFile" disabled="@(_selectedFile == null)">Upload</button>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <h5>Paste JSON Data</h5>
+            <div class="input-group">
+                <textarea @bind="_mapJsonText" class="form-control" placeholder="Paste map JSON here" rows="1"></textarea>
+                <button type="button" class="btn btn-primary" @onclick="ParseMapFromText">Load</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger mt-3">
+        @_errorMessage
+    </div>
+}
+
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center mt-3">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <span class="ms-2">Loading...</span>
+    </div>
+}
+else if (_mapTotal != null)
 {
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -20,7 +58,7 @@
                     <strong>Height:</strong> @_mapTotal.MapHeight
                 </div>
                 <div class="col-md-4">
-                    <strong>Tiles:</strong> @_mapTotal.Tiles.Count
+                    <strong>Tiles:</strong> @(_mapTotal.Tiles?.Count ?? 0)
                 </div>
             </div>
         </div>
@@ -60,40 +98,120 @@
         }
     </style>
 }
-else
-{
-    <div class="d-flex justify-content-center">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    </div>
-}
 
 @code {
     private MapTotal? _mapTotal;
-    private readonly string _filePath = "../Map/map_test.json";
+    private IBrowserFile? _selectedFile;
+    private bool _isLoading = false;
+    private string _mapJsonText = "";
+    private string? _errorMessage;
 
-    protected override async Task OnInitializedAsync()
+    private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
-        _mapTotal = await JsonParser.ParseJsonAsync(_filePath);
-        Console.Write($"{_filePath} \n{_mapTotal}\n");
-        Console.WriteLine($"Map height: {_mapTotal.MapHeight}");
-        Console.WriteLine($"Map Width: {_mapTotal.MapWidth}");
-        Console.WriteLine($"Map tiles: {_mapTotal.Tiles.Count}");
+        PropertyNameCaseInsensitive = true,
+        AllowTrailingCommas = true
+    };
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Map component initialized");
+    }
+
+    public void HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _errorMessage = null;
+        Console.WriteLine($"File selected: {_selectedFile.Name}");
+    }
+
+    public async Task ProcessSelectedFile()
+    {
+        Console.WriteLine("ProcessSelectedFile called");
+        if (_selectedFile == null) return;
+
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            Console.WriteLine($"Processing file: {_selectedFile.Name}");
+            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            
+            using var reader = new StreamReader(memoryStream);
+            var json = await reader.ReadToEndAsync();
+            
+            Console.WriteLine($"JSON content: {json.Substring(0, Math.Min(100, json.Length))}...");
+
+            _mapTotal = JsonSerializer.Deserialize<MapTotal>(json, _jsonOptions);
+
+            if (_mapTotal == null)
+            {
+                _errorMessage = "Failed to parse JSON: Invalid format";
+                Console.WriteLine("Map deserialized to null");
+            }
+            else
+            {
+                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles?.Count ?? 0} tiles");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"Error loading map: {ex}");
+            _mapTotal = null;
+        }
+        finally
+        {
+            _isLoading = false;
+            _selectedFile = null;
+            StateHasChanged();
+        }
+    }
+
+    public void ParseMapFromText()
+    {
+        Console.WriteLine("ParseMapFromText called");
+        if (string.IsNullOrWhiteSpace(_mapJsonText)) return;
+
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            Console.WriteLine($"Parsing JSON text: {_mapJsonText.Substring(0, Math.Min(100, _mapJsonText.Length))}...");
+            _mapTotal = JsonSerializer.Deserialize<MapTotal>(_mapJsonText, _jsonOptions);
+
+            if (_mapTotal == null)
+            {
+                _errorMessage = "Failed to parse JSON: Invalid format";
+                Console.WriteLine("Map deserialized to null");
+            }
+            else
+            {
+                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles?.Count ?? 0} tiles");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"Error parsing JSON: {ex}");
+            _mapTotal = null;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private string GetTileImagePath(string tileType)
     {
-        // Maps each tile type to its corresponding image
-        return $"images/tiles/{tileType.ToLowerInvariant()}.png";
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JsRuntime.InvokeVoidAsync("enableTooltips");
-        }
+        return $"images/Tiles/{tileType.ToLowerInvariant()}.png";
     }
 
     public class MapCase
@@ -108,7 +226,6 @@ else
         public required string Type { get; set; }
     }
 
-
     public class MapTotal
     {
         [JsonPropertyName("map_width")]
@@ -119,20 +236,5 @@ else
 
         [JsonPropertyName("tiles")]
         public List<MapCase> Tiles { get; init; } = [];
-    }
-
-    public static class JsonParser
-    {
-        public static async Task<MapTotal> ParseJsonAsync(string filepath)
-        {
-            string jsonString = await File.ReadAllTextAsync(filepath);
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = false
-            };
-
-            MapTotal? mapTotal = JsonSerializer.Deserialize<MapTotal>(jsonString, options);
-            return mapTotal ?? new MapTotal();
-        }
     }
 }
