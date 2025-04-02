@@ -3,7 +3,6 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using System.IO
-@inject IJSRuntime JsRuntime
 
 <h3>Map</h3>
 
@@ -18,7 +17,7 @@
         </div>
 
         <div class="col-md-6 mb-3">
-            <h5>Paste JSON Data</h5>
+            <h5>Paste JSON Data 10*10 maximum size</h5>
             <div class="input-group">
                 <textarea @bind="_mapJsonText" class="form-control" placeholder="Paste map JSON here" rows="1"></textarea>
                 <button type="button" class="btn btn-primary" @onclick="ParseMapFromText">Load</button>
@@ -33,78 +32,162 @@
         @_errorMessage
     </div>
 }
-
-@if (_isLoading)
-{
-    <div class="d-flex justify-content-center mt-3">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <span class="ms-2">Loading...</span>
-    </div>
-}
 else if (_mapTotal != null)
 {
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            Map Information
+    <div class="map-controls mb-3">
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" @onclick="ZoomOut"><i class="bi bi-zoom-out"></i></button>
+            <button class="btn btn-outline-secondary">Zoom: @_tileSize px</button>
+            <button class="btn btn-outline-secondary" @onclick="ZoomIn"><i class="bi bi-zoom-in"></i></button>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <strong>Width:</strong> @_mapTotal.MapWidth
-                </div>
-                <div class="col-md-4">
-                    <strong>Height:</strong> @_mapTotal.MapHeight
-                </div>
-                <div class="col-md-4">
-                    <strong>Tiles:</strong> @(_mapTotal.Tiles?.Count ?? 0)
-                </div>
-            </div>
+
+        <div class="form-check form-switch ms-3">
+            <input class="form-check-input" type="checkbox" id="showCoordinates" @bind="_showCoordinates">
+            <label class="form-check-label" for="showCoordinates">Afficher les coordonnées</label>
         </div>
     </div>
 
-    <div class="map-container p-2 border rounded">
-        @for (int y = 0; y < _mapTotal.MapHeight; y++)
-        {
-            <div class="row g-0">
-                @for (int x = 0; x < _mapTotal.MapWidth; x++)
-                {
-                    var tile = _mapTotal.Tiles?.FirstOrDefault(t => t.PosX == x && t.PosY == y);
-                    if (tile != null)
+    <div class="map-outer-container">
+        <div class="map-container p-2 border rounded" style="--tile-size: @(_tileSize)px">
+            @if (_showCoordinates)
+            {
+                <div class="coordinates-x" style="grid-template-columns: repeat(@_mapTotal.MapWidth, @(_tileSize)px);">
+                    @for (int x = 0; x < _mapTotal.MapWidth; x++)
                     {
-                        <div class="col p-0">
-                            <img src="@GetTileImagePath(tile.Type)"
-                                 class="tile lazy"
-                                 alt="@tile.Type"
-                                 data-bs-toggle="tooltip"
-                                 title="X: @tile.PosX, Y: @tile.PosY, Type: @tile.Type"
-                                 loading="lazy" />
-                        </div>
+                        <div class="coordinate">@x</div>
                     }
+                </div>
+            }
+
+            <div class="grid-container">
+                @if (_showCoordinates)
+                {
+                    <div class="coordinates-y" style="grid-template-rows: repeat(@_mapTotal.MapHeight, @(_tileSize)px);">
+                        @for (int y = 0; y < _mapTotal.MapHeight; y++)
+                        {
+                            <div class="coordinate">@y</div>
+                        }
+                    </div>
                 }
+                <div class="tile-grid" style="grid-template-columns: repeat(@_mapTotal.MapWidth, @(_tileSize)px);
+                grid-template-rows: repeat(@_mapTotal.MapHeight, @(_tileSize)px);">
+
+                    @for (int y = 0; y < _mapTotal.MapHeight; y++)
+                    {
+                        @for (int x = 0; x < _mapTotal.MapWidth; x++)
+                        {
+                            var tile = _mapTotal.Tiles?.FirstOrDefault(t => t.PosX == x && t.PosY == y);
+                            if (tile != null)
+                            {
+                                <div class="tile-wrapper" data-x="@x" data-y="@y" @onclick="() => ShowTileDetails(tile)" 
+                                     style="width: @(_tileSize)px; height: @(_tileSize)px;">
+                                    <img src="@GetTileImagePath(tile.Type)"
+                                         class="tile"
+                                         alt="@tile.Type"
+                                         title="X: @tile.PosX, Y: @tile.PosY, Type: @tile.Type"
+                                         loading="lazy"/>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (_selectedTile != null)
+        {
+            <div class="tile-details card my-3 pb-1">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Détails de la tuile</span>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => _selectedTile = null"></button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <img src="@GetTileImagePath(_selectedTile.Type)" class="img-fluid" alt="@_selectedTile.Type"/>
+                        </div>
+                        <div class="col-8">
+                            <p><strong>Position:</strong> X: @_selectedTile.PosX, Y: @_selectedTile.PosY</p>
+                            <p><strong>Type:</strong> @_selectedTile.Type</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
     </div>
-
-    <style>
-        .map-container {
-            width: fit-content;
-        }
-        .tile {
-            width: 50px;
-            height: 50px;
-            margin: 1px;
-        }
-    </style>
 }
 
+<style>
+    .map-outer-container {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .map-container {
+        --tile-size: 50px;
+        width: fit-content;
+    }
+    
+    .grid-container {
+        display: flex;
+    }
+    
+    .tile-grid {
+        display: grid;
+        gap: 1px;
+    }
+    
+    .tile {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .tile-wrapper {
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    
+    .tile-wrapper:hover {
+        transform: scale(1.05);
+        z-index: 10;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    
+    .coordinates-x {
+        display: grid;
+        gap: 1px;
+        padding-left: 20px;
+        margin-bottom: 4px;
+    }
+    
+    .coordinates-y {
+        display: grid;
+        gap: 1px;
+        margin-right: 4px;
+        width: 20px;
+    }
+    
+    .coordinate {
+        text-align: center;
+        font-size: 0.7rem;
+        color: var(--bs-secondary);
+    }
+</style>
+
 @code {
+    // variables utilisées entre le html et le code
     private MapTotal? _mapTotal;
     private IBrowserFile? _selectedFile;
-    private bool _isLoading = false;
     private string _mapJsonText = "";
     private string? _errorMessage;
+    
+    // variables pour modifier le comportement de l'affiachage
+    private int _tileSize = 50;
+    private bool _showCoordinates = false;
+    private MapCase? _selectedTile;
+    
 
     private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
@@ -124,12 +207,28 @@ else if (_mapTotal != null)
         Console.WriteLine($"File selected: {_selectedFile.Name}");
     }
 
+    // fonctions visuelles de la carte
+    private void ZoomIn()
+    {
+        _tileSize = Math.Min(100, _tileSize + 10);
+    }
+    
+    private void ZoomOut()
+    {
+        _tileSize = Math.Max(20, _tileSize - 10);
+    }
+    
+    private void ShowTileDetails(MapCase tile)
+    {
+        _selectedTile = tile;
+    }
+
+    
     public async Task ProcessSelectedFile()
     {
         Console.WriteLine("ProcessSelectedFile called");
         if (_selectedFile == null) return;
 
-        _isLoading = true;
         _errorMessage = null;
         StateHasChanged();
 
@@ -155,7 +254,7 @@ else if (_mapTotal != null)
             }
             else
             {
-                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles?.Count ?? 0} tiles");
+                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
             }
         }
         catch (Exception ex)
@@ -166,7 +265,6 @@ else if (_mapTotal != null)
         }
         finally
         {
-            _isLoading = false;
             _selectedFile = null;
             StateHasChanged();
         }
@@ -177,12 +275,13 @@ else if (_mapTotal != null)
         Console.WriteLine("ParseMapFromText called");
         if (string.IsNullOrWhiteSpace(_mapJsonText)) return;
 
-        _isLoading = true;
         _errorMessage = null;
         StateHasChanged();
 
         try
         {
+            Console.Write("Something strange is happenning");
+
             Console.WriteLine($"Parsing JSON text: {_mapJsonText.Substring(0, Math.Min(100, _mapJsonText.Length))}...");
             _mapTotal = JsonSerializer.Deserialize<MapTotal>(_mapJsonText, _jsonOptions);
 
@@ -193,7 +292,7 @@ else if (_mapTotal != null)
             }
             else
             {
-                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles?.Count ?? 0} tiles");
+                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
             }
         }
         catch (Exception ex)
@@ -204,7 +303,7 @@ else if (_mapTotal != null)
         }
         finally
         {
-            _isLoading = false;
+            Console.Write("What is happening ?");
             StateHasChanged();
         }
     }
