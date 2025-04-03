@@ -106,6 +106,16 @@ else if (_mapTotal != null)
                                             <img class="@player.DirectionClass" src="@player.sprite" />
                                         </div>
                                     }
+                                   
+                                   @foreach (var player in _players)
+                                   {
+                                       @foreach (var shoot in player._shots.Where(s => s.X == x && s.Y == y))
+                                       {
+                                           <div class="player-shot">
+                                               <img class="@shoot.DirectionClass" src="@shoot.Sprite" />
+                                           </div>
+                                       }
+                                   }                  
                                 </div>
                             }
                         }
@@ -158,7 +168,7 @@ else if (_mapTotal != null)
                     </button>
                     
                     <!--Up-->
-                    <button class="btn btn-outline-primary" @onclick="MoveUp">
+                    <button class="btn btn-outline-primary" @onclick="MoveForward">
                         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                              style="display: block; overflow: visible;">
                             <path fill-rule="evenodd" clip-rule="evenodd"
@@ -177,37 +187,24 @@ else if (_mapTotal != null)
                         </svg>
                     </button>
                 </div>
-                <!--Left-->
-                <div class="d-flex justify-content-center">
-                    <button class="btn btn-outline-primary me-2" @onclick="MoveLeft">
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(270)"
-                             style="display: block; overflow: visible;">
+
+            </div>
+            <!--Down-->
+            <div class="d-flex justify-content-center mt-2">
+                <button class="btn btn-outline-primary" @onclick="MoveBackward">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(180)"
+                         style="display: block; overflow: visible;">
                         <path fill-rule="evenodd" clip-rule="evenodd"
                               d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
                               fill="currentColor"/>
-                        </svg>
-                    </button>
-                        <!--Right-->
-                    <button class="btn btn-outline-primary ms-2" @onclick="MoveRight">
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(90)"
-                             style="display: block; overflow: visible;">
-                            <path fill-rule="evenodd" clip-rule="evenodd"
-                                  d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
-                                  fill="currentColor"/>
-                        </svg>
-                    </button>
-                </div>
-                <!--Down-->
-                <div class="d-flex justify-content-center mt-2">
-                    <button class="btn btn-outline-primary" @onclick="MoveDown">
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(180)"
-                             style="display: block; overflow: visible;">
-                            <path fill-rule="evenodd" clip-rule="evenodd"
-                                  d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
-                                  fill="currentColor"/>
-                        </svg>
-                    </button>
-                </div>
+                    </svg>
+                </button>
+            </div>
+            
+            <div>
+                <button class="btn btn-outline-primary" @onclick="PlayerShot">
+                    yep shooting here
+                </button>
             </div>
         </div>
     }
@@ -288,6 +285,22 @@ else if (_mapTotal != null)
         cursor: pointer;
         box-shadow: 0 0 5px rgba(0,0,0,0.5);
     }
+    
+    .player-shot {
+        position: absolute;
+        width: 50%;
+        height: 50%;
+        top: 10%;
+        left: 10%;
+        border-radius: 50%;
+        diplay: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        z-index: 10;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
 
     .player:hover {
         transform: scale(1.1);
@@ -318,22 +331,23 @@ else if (_mapTotal != null)
 </style>
 
 @code {
+
     // variables utilisées entre le html et le code
     private MapTotal? _mapTotal;
     private IBrowserFile? _selectedFile;
     private string _mapJsonText = "";
     private string? _errorMessage;
-    
+
     // variables pour modifier le comportement de l'affiachage
     private int _tileSize = 50;
     private bool _showCoordinates = false;
     private MapCase? _selectedTile;
-    
+
     // players logic
     private List<Player> _players = new();
     private Player? _selectedPlayer;
     private List<(int X, int Y)> _spawnPoints = new();
-    
+
     // surper of jsonSerial to customise output format
     private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
@@ -354,12 +368,12 @@ else if (_mapTotal != null)
     {
         _tileSize = Math.Min(100, _tileSize + 10);
     }
-    
+
     private void ZoomOut()
     {
         _tileSize = Math.Max(20, _tileSize - 10);
     }
-    
+
     private void ShowTileDetails(MapCase tile)
     {
         _selectedTile = tile;
@@ -382,11 +396,11 @@ else if (_mapTotal != null)
             // copy the content into a memorystream, simply said it just copies the data into memory
             await stream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
-            
+
             // reading the json
             using var reader = new StreamReader(memoryStream);
             var json = await reader.ReadToEndAsync();
-            
+
             // sneak a peek...
             Console.WriteLine($"JSON content: {json.Substring(0, Math.Min(100, json.Length))}...");
 
@@ -402,7 +416,7 @@ else if (_mapTotal != null)
             {
                 // sneek another peek... this time formated
                 Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
-                
+
                 // after successfull loading we check spawnpoints and initialise players
                 FindSpawnPoints();
                 InitializePlayers();
@@ -445,7 +459,7 @@ else if (_mapTotal != null)
             else
             {
                 Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
-                
+
                 // Après le succès du chargement
                 FindSpawnPoints();
                 InitializePlayers();
@@ -473,28 +487,22 @@ else if (_mapTotal != null)
 
     public class MapCase
     {
-        [JsonPropertyName("x")]
-        public int PosX { get; set; }
+        [JsonPropertyName("x")] public int PosX { get; set; }
 
-        [JsonPropertyName("y")]
-        public int PosY { get; set; }
+        [JsonPropertyName("y")] public int PosY { get; set; }
 
-        [JsonPropertyName("type")]
-        public required string Type { get; set; }
+        [JsonPropertyName("type")] public required string Type { get; set; }
     }
 
     public class MapTotal
     {
-        [JsonPropertyName("map_width")]
-        public int MapWidth { get; init; }
+        [JsonPropertyName("map_width")] public int MapWidth { get; init; }
 
-        [JsonPropertyName("map_height")]
-        public int MapHeight { get; init; }
+        [JsonPropertyName("map_height")] public int MapHeight { get; init; }
 
-        [JsonPropertyName("tiles")]
-        public List<MapCase> Tiles { get; init; } = [];
+        [JsonPropertyName("tiles")] public List<MapCase> Tiles { get; init; } = [];
     }
-    
+
     public enum Direction
     {
         Up,
@@ -502,7 +510,74 @@ else if (_mapTotal != null)
         Down,
         Left
     }
-    
+
+    public class Shoot
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string Sprite = "images/Sprites/plasma_player1.png";
+        public Direction Direction { get; set; }
+        public Player Parent { get; set; }
+
+        public Shoot(int x, int y, Direction direction, Player parent)
+        {
+            X = x;
+            Y = y;
+            Direction = direction;
+            Parent = parent;
+            // Remove the AnimateAsync call here
+        }
+
+        public string DirectionClass => Direction switch
+        {
+            Direction.Up => "rotation_up",
+            Direction.Right => "rotation_right",
+            Direction.Down => "rotation_down",
+            Direction.Left => "rotation_left",
+            _ => "rotation_up"
+        };
+
+        // Update this method to return a bool indicating if the shot should be removed
+        public bool Move()
+        {
+            switch (this.Direction)
+            {
+                case Direction.Up:
+                    Y -= 1;
+                    break;
+                case Direction.Left:
+                    X -= 1;
+                    break;
+                case Direction.Right:
+                    X += 1;
+                    break;
+                case Direction.Down:
+                    Y += 1;
+                    break;
+                default:
+                    Console.WriteLine("Unknown direction unable to move");
+                    break;
+            }
+
+            // Check if shot is out of bounds or hit an obstacle
+            return IsOutOfBounds() || HitObstacle();
+        }
+
+        private bool IsOutOfBounds()
+        {
+            // Check map boundaries if MapData is accessible
+            return X < 0 || Y < 0 ||
+                   (Parent?.MapData != null && (X >= Parent.MapData.MapWidth || Y >= Parent.MapData.MapHeight));
+        }
+
+        private bool HitObstacle()
+        {
+            // Check if hit a wall or other obstacle
+            // Implementation depends on how you want to detect collisions
+            return false;
+        }
+    }
+
     public class Player
     {
         public int X { get; set; }
@@ -510,6 +585,16 @@ else if (_mapTotal != null)
         public string Name { get; set; }
         public string sprite = "images/Sprites/player1.png";
         public Direction Direction { get; set; } = Direction.Up;
+        public List<Shoot> _shots { get; set; } = new List<Shoot>();
+        public MapTotal MapData { get; set; }
+
+        public Player(int x, int y, string name, MapTotal? mapData = null)
+        {
+            X = x;
+            Y = y;
+            Name = name;
+            MapData = mapData;
+        }
 
         // Convert enum to CSS class name
         public string DirectionClass => Direction switch
@@ -521,11 +606,135 @@ else if (_mapTotal != null)
             _ => "rotation_up"
         };
 
-        public Player(int x, int y, string name)
+
+
+        // function to move players, checks for out of bound and walls, but can still walk on "void" tiles, i means i tought would be more funny to 'fall' and lose like this
+        public void MovePlayer(Player player, bool move)
         {
-            X = x;
-            Y = y;
-            Name = name;
+            Console.WriteLine("tryin to move before condition");  
+            Console.WriteLine($"player : {player}, player.MapData :{player.MapData}");
+            if (player == null || player.MapData == null) return;
+            Console.WriteLine("tryin to move");            
+
+            if (move)
+            {
+                switch (player.Direction)
+                {
+                    case Direction.Down:
+                        if (player.Y + 1 < MapData.MapHeight)
+                        {
+                            player.Y += 1;
+                        }
+
+                        break;
+
+                    case Direction.Up:
+                        if (player.Y - 1 >= 0)
+                        {
+                            player.Y -= 1;
+                        }
+
+                        break;
+
+                    case Direction.Left:
+                        if (player.X - 1 >= 0)
+                        {
+                            player.X -= 1;
+                        }
+
+                        break;
+
+                    case Direction.Right:
+                        if (player.X + 1 < MapData.MapWidth)
+                        {
+                            player.X += 1;
+                        }
+
+                        break;
+
+                    default:
+                        Console.WriteLine("Didn't know the direction of the player");
+                        break;
+                }
+            }
+            else
+            {
+                switch (player.Direction)
+                {
+                    case Direction.Down:
+                        if (player.Y - 1 >= 0)
+                        {
+                            player.Y -= 1;
+                        }
+
+                        break;
+
+                    case Direction.Up:
+                        if (player.Y + 1 < MapData.MapHeight)
+                        {
+                            player.Y += 1;
+                        }
+
+                        break;
+
+                    case Direction.Left:
+                        if (player.X + 1 < MapData.MapWidth)
+                        {
+                            player.X += 1;
+                        }
+
+                        break;
+
+                    case Direction.Right:
+                        if (player.X - 1 >= 0)
+                        {
+                            player.X -= 1;
+                        }
+
+                        break;
+
+                    default:
+                        Console.WriteLine("Didn't know the direction of the player");
+                        break;
+                }
+            }
+        }
+
+        public void RotatePlayer(Player player, bool rotateRight)
+        {
+            if (player == null) return;
+
+            // Calculate new direction based on current direction and rotation direction
+            int directionCount = Enum.GetValues<Direction>().Length;
+            int currentDirection = (int)player.Direction;
+
+            // For right rotation: add 1 and wrap around
+            // For left rotation: subtract 1 and wrap around
+            int newDirection = rotateRight
+                ? (currentDirection + 1) % directionCount
+                : (currentDirection - 1 + directionCount) % directionCount;
+
+            player.Direction = (Direction)newDirection;
+        }
+
+        public void MoveAllShots()
+        {
+            List<Shoot> shotsToRemove = new List<Shoot>();
+
+            foreach (var shot in _shots)
+            {
+                bool shouldRemove = shot.Move();
+                if (shouldRemove)
+                {
+                    shotsToRemove.Add(shot);
+                }
+            }
+
+            // Remove shots that went out of bounds
+            foreach (var shot in shotsToRemove)
+            {
+                _shots.Remove(shot);
+            }
         }
     }
 
@@ -558,48 +767,11 @@ else if (_mapTotal != null)
                 {
                     return;
                 }
+
                 // here we count a new player in the game
-                _players.Add(new Player(spawnPoint.X, spawnPoint.Y, "Player1"));
+                _players.Add(new Player(spawnPoint.X, spawnPoint.Y, "Player1", _mapTotal));
             }
         }
-    }
-
-    // function to move players, checks for out of bound and walls, but can still walk on "void" tiles, i means i tought would be more funny to 'fall' and lose like this
-    private void MovePlayer(Player player, int deltaX, int deltaY)
-    {
-        if (player == null || _mapTotal == null) return;
-
-        int newX = player.X + deltaX;
-        int newY = player.Y + deltaY;
-        
-        // verification that the position is not out of bounds (so in the map)
-        if (newX >= 0 && newX < _mapTotal.MapWidth && newY >= 0 && newY < _mapTotal.MapHeight)
-        {
-            // verification to not go trought things like walls
-            var targetTile = _mapTotal.Tiles?.FirstOrDefault(tile => tile.PosX == newX && tile.PosY == newY);
-            if (targetTile != null && targetTile.Type != "wall") // here list of tiles the player cannot walk on
-            {
-                player.X = newX;
-                player.Y = newY;
-            }
-        }
-    }
-
-    private void RotatePlayer(Player player, bool rotateRight)
-    {
-        if (player == null) return;
-    
-        // Calculate new direction based on current direction and rotation direction
-        int directionCount = Enum.GetValues<Direction>().Length;
-        int currentDirection = (int)player.Direction;
-    
-        // For right rotation: add 1 and wrap around
-        // For left rotation: subtract 1 and wrap around
-        int newDirection = rotateRight
-            ? (currentDirection + 1) % directionCount
-            : (currentDirection - 1 + directionCount) % directionCount;
-    
-        player.Direction = (Direction)newDirection;
     }
 
     // simple function to selection a player and update which player is affected by the movements, only one is spawned at the time of this comment
@@ -608,12 +780,58 @@ else if (_mapTotal != null)
         _selectedPlayer = player;
     }
 
-    // movements connected to the details tab of the player surrely can do this more properly but is enough for now
-    private void MoveUp() => MovePlayer(_selectedPlayer, 0, -1);
-    private void MoveDown() => MovePlayer(_selectedPlayer, 0, 1);
-    private void MoveLeft() => MovePlayer(_selectedPlayer, -1, 0);
-    private void MoveRight() => MovePlayer(_selectedPlayer, 1, 0);
 
-    private void RotateRight() => RotatePlayer(_selectedPlayer, true);
-    private void RotateLeft() => RotatePlayer(_selectedPlayer, false);
+    // Update movement methods to trigger shot movement
+    private void MoveForward()
+    {
+        Console.WriteLine("Checking to move player");
+        if (_selectedPlayer != null)
+        {
+            Console.WriteLine("Player found !");
+            _selectedPlayer.MovePlayer(_selectedPlayer, true);
+            _selectedPlayer.MoveAllShots();
+            StateHasChanged();
+        }
+    }
+
+    private void MoveBackward()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.MovePlayer(_selectedPlayer, false);
+            _selectedPlayer.MoveAllShots();
+            StateHasChanged();
+        }
+    }
+
+    private void RotateRight()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.RotatePlayer(_selectedPlayer, true);
+            _selectedPlayer.MoveAllShots();
+            StateHasChanged();
+        }
+    }
+
+    private void RotateLeft()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.RotatePlayer(_selectedPlayer, false);
+            _selectedPlayer.MoveAllShots();
+            StateHasChanged();
+        }
+    }
+
+    private void PlayerShot()
+    {
+        if (_selectedPlayer != null)
+        {
+            var shot = new Shoot(_selectedPlayer.X, _selectedPlayer.Y, _selectedPlayer.Direction, _selectedPlayer);
+            _selectedPlayer._shots.Add(shot);
+            _selectedPlayer.MoveAllShots();
+            StateHasChanged();
+        }
+    }
 }
