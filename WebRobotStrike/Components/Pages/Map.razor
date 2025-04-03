@@ -103,7 +103,7 @@ else if (_mapTotal != null)
                                         <div class="player"
                                              @onclick:stopPropagation="true"
                                              @onclick='() => SelectPlayer(player)'> <!-- to move the player we use the select player function -->
-                                            <img src="@player.sprite"/>
+                                            <img class="@player.DirectionClass" src="@player.sprite" />
                                         </div>
                                     }
                                 </div>
@@ -145,27 +145,67 @@ else if (_mapTotal != null)
                 <span>Contrôles du joueur @_selectedPlayer.Name</span>
                 <button type="button" class="btn-close" aria-label="Close" @onclick="() => _selectedPlayer = null"></button>
             </div>
-            <!--Up-->
             <div class="card-body">
                 <div class="d-flex justify-content-center mb-2">
+                    <!--Rotation Left-->
+                    <button class="btn btn-outline-primary" @onclick="RotateLeft">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(180)"
+                             style="display: block; overflow: visible">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M14.2929 4.29289C14.4804 4.10536 14.7348 4 15 4C15.2652 4 15.5196 4.10536 15.7071 4.29289L21.7071 10.2929C22.0976 10.6834 22.0976 11.3166 21.7071 11.7071C21.3166 12.0976 20.6834 12.0976 20.2929 11.7071L16 7.41421V12C16 15.3137 13.3137 18 10 18H3C2.44772 18 2 17.5523 2 17C2 16.4477 2.44772 16 3 16H10C12.2091 16 14 14.2091 14 12V7.41421L9.70711 11.7071C9.31658 12.0976 8.68342 12.0976 8.29289 11.7071C7.90237 11.3166 7.90237 10.6834 8.29289 10.2929L14.2929 4.29289Z"
+                                  fill="currentColor"/>
+                        </svg>
+                    </button>
+                    
+                    <!--Up-->
                     <button class="btn btn-outline-primary" @onclick="MoveUp">
-                        <i class="bi bi-arrow-up"></i>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                             style="display: block; overflow: visible;">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
+                                  fill="currentColor"/>
+                        </svg>
+                    </button>
+
+                    <!--Rotation Right-->
+                    <button class="btn btn-outline-primary" @onclick="RotateRight">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="matrix(-1, 0, 0, 1, 0, 0) rotate(180)"
+                             style="display: block; overflow: visible;">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M14.2929 4.29289C14.4804 4.10536 14.7348 4 15 4C15.2652 4 15.5196 4.10536 15.7071 4.29289L21.7071 10.2929C22.0976 10.6834 22.0976 11.3166 21.7071 11.7071C21.3166 12.0976 20.6834 12.0976 20.2929 11.7071L16 7.41421V12C16 15.3137 13.3137 18 10 18H3C2.44772 18 2 17.5523 2 17C2 16.4477 2.44772 16 3 16H10C12.2091 16 14 14.2091 14 12V7.41421L9.70711 11.7071C9.31658 12.0976 8.68342 12.0976 8.29289 11.7071C7.90237 11.3166 7.90237 10.6834 8.29289 10.2929L14.2929 4.29289Z"
+                                  fill="currentColor"/>
+                        </svg>
                     </button>
                 </div>
                 <!--Left-->
                 <div class="d-flex justify-content-center">
                     <button class="btn btn-outline-primary me-2" @onclick="MoveLeft">
-                        <i class="bi bi-arrow-left"></i>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(270)"
+                             style="display: block; overflow: visible;">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                              d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
+                              fill="currentColor"/>
+                        </svg>
                     </button>
-                    <!--Right-->
+                        <!--Right-->
                     <button class="btn btn-outline-primary ms-2" @onclick="MoveRight">
-                        <i class="bi bi-arrow-right"></i>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(90)"
+                             style="display: block; overflow: visible;">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
+                                  fill="currentColor"/>
+                        </svg>
                     </button>
                 </div>
                 <!--Down-->
                 <div class="d-flex justify-content-center mt-2">
                     <button class="btn btn-outline-primary" @onclick="MoveDown">
-                        <i class="bi bi-arrow-down"></i>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(180)"
+                             style="display: block; overflow: visible;">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
+                                  fill="currentColor"/>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -258,6 +298,22 @@ else if (_mapTotal != null)
         height: 100%;
         object-fit: contain;
         border-radius: 50%;
+    }
+    
+    .rotation_up {
+        rotate: 0;
+    }
+    
+    .rotation_left {
+        rotate: -90deg
+    }
+    
+    .rotation_right {
+        rotate: 90deg
+    }
+    
+    .rotation_down {
+        rotate: 180deg
     }
 </style>
 
@@ -361,7 +417,7 @@ else if (_mapTotal != null)
         }
         finally
         {
-            // reload interface to show new map, and remove the file from the memory since its been teated
+            // reload interface to show new map, and remove the file from the memory since it's been treated
             _selectedFile = null;
             StateHasChanged();
         }
@@ -438,14 +494,32 @@ else if (_mapTotal != null)
         [JsonPropertyName("tiles")]
         public List<MapCase> Tiles { get; init; } = [];
     }
-
+    
+    public enum Direction
+    {
+        Up,
+        Right,
+        Down,
+        Left
+    }
+    
     public class Player
     {
         public int X { get; set; }
         public int Y { get; set; }
         public string Name { get; set; }
         public string sprite = "images/Sprites/player1.png";
-        public string direction = "down";
+        public Direction Direction { get; set; } = Direction.Up;
+
+        // Convert enum to CSS class name
+        public string DirectionClass => Direction switch
+        {
+            Direction.Up => "rotation_up",
+            Direction.Right => "rotation_right",
+            Direction.Down => "rotation_down",
+            Direction.Left => "rotation_left",
+            _ => "rotation_up"
+        };
 
         public Player(int x, int y, string name)
         {
@@ -511,14 +585,21 @@ else if (_mapTotal != null)
         }
     }
 
-    private void RotatePlayer(Player player)
+    private void RotatePlayer(Player player, bool rotateRight)
     {
-        // apperently need to do player rotation with css...
-        // rotate: axis angle|initial|inherit
-        // changes will be made to the class
-        // and css
-        // and html
-        return;
+        if (player == null) return;
+    
+        // Calculate new direction based on current direction and rotation direction
+        int directionCount = Enum.GetValues<Direction>().Length;
+        int currentDirection = (int)player.Direction;
+    
+        // For right rotation: add 1 and wrap around
+        // For left rotation: subtract 1 and wrap around
+        int newDirection = rotateRight
+            ? (currentDirection + 1) % directionCount
+            : (currentDirection - 1 + directionCount) % directionCount;
+    
+        player.Direction = (Direction)newDirection;
     }
 
     // simple function to selection a player and update which player is affected by the movements, only one is spawned at the time of this comment
@@ -532,4 +613,7 @@ else if (_mapTotal != null)
     private void MoveDown() => MovePlayer(_selectedPlayer, 0, 1);
     private void MoveLeft() => MovePlayer(_selectedPlayer, -1, 0);
     private void MoveRight() => MovePlayer(_selectedPlayer, 1, 0);
+
+    private void RotateRight() => RotatePlayer(_selectedPlayer, true);
+    private void RotateLeft() => RotatePlayer(_selectedPlayer, false);
 }
