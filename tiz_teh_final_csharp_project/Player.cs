@@ -8,6 +8,7 @@ namespace tiz_teh_final_csharp_project
         public int x { get; set; }
         public int y { get; set; }
         public char direction { get; set;}
+        public char curInput { get; set; }
         public string inputs { get; set;}
         public int xA;
         public int yA;
@@ -24,6 +25,7 @@ namespace tiz_teh_final_csharp_project
                 Console.WriteLine($"Player {id}: Carte is null!");
                 return;
             }
+            pushDirection = direction;
             if (direction == 'N')
             {
                 newY += -1;
@@ -175,30 +177,7 @@ namespace tiz_teh_final_csharp_project
             return (Console.ReadLine());
 
         }
-        public void ReadInput(char i, Map carte)
-        {
-            if (i == 'q')
-            {
-                    RotateLeft();
-            }
-            else if (i == 'w')
-            {
-                    MoveForward(carte);
-            }
-            else if (i == 's')
-            {
-                    MoveBackward(carte);
-            }
-            else if (i == 'e')
-            {
-                    RotateRight();
-            }
-            else
-            {
-                    Console.WriteLine("Invalid input");
-            }
-            
-        }
+
 
         public void HandleCollision(Player player1, Player player2, Map carte)
         {
@@ -219,7 +198,8 @@ namespace tiz_teh_final_csharp_project
                 }
                 else if (player1.pushDirection == 'E')
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    bool isValid = carte.isValidMove(player2.x + 1, player2.y);
+                    Console.WriteLine(isValid);
                     if (isValid)
                     {
                         player2.x += 1;
@@ -232,7 +212,7 @@ namespace tiz_teh_final_csharp_project
                 }
                 else if (player1.pushDirection == 'W')
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    bool isValid = carte.isValidMove(player2.x - 1, player2.y);
                     if (isValid)
                     {
                         player2.x += -1;
@@ -245,7 +225,7 @@ namespace tiz_teh_final_csharp_project
                 }
                 else if (player1.pushDirection == 'S')
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    bool isValid = carte.isValidMove(player2.x, player2.y + 1);
                     if (isValid)
                     {
                         player2.y += 1;
@@ -269,5 +249,4 @@ namespace tiz_teh_final_csharp_project
             }
         }
     }
-
 }

@@ -1,7 +1,22 @@
+using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Runtime.InteropServices.Swift;
 
 namespace tiz_teh_final_csharp_project
 {
+    public class Turn
+    {
+        public int turnNumber { get; set; }
+        public List<Player> players { get; set; }
+        public Turn(int turnNumber, List<Player> players)
+        {
+            this.turnNumber = turnNumber;
+            this.players = players;
+        }
+
+
+    }
+
     public class Game
     {
         public Map map { get; set; }
@@ -55,8 +70,33 @@ namespace tiz_teh_final_csharp_project
             GameLoop();
 
         }
+        public void ReadInput(Player player, char i, Map carte)
+        {
+            if (i == 'a')
+            {
+                    player.RotateLeft();
+            }
+            else if (i == 'z')
+            {
+                    player.MoveForward(carte);
+            }
+            else if (i == 's')
+            {
+                    player.MoveBackward(carte);
+            }
+            else if (i == 'e')
+            {
+                    player.RotateRight();
+            }
+            else
+            {
+                    Console.WriteLine("Invalid input");
+            }
+            
+        }
         public void GameLoop()
         {
+            Turn[] turnData = new Turn[6];
             map.printMap(Players);
             foreach (var player in Players)
             {
@@ -71,26 +111,38 @@ namespace tiz_teh_final_csharp_project
             }
             for (int j = 0; j < 6; j++)
             {
+                Turn curTurn = new Turn(j, Players);
+
                 foreach (var player in Players)
                 {
-                    player.ReadInput(player.inputs[j], map);  
+                    ReadInput(player, player.inputs[j], map);
+                    player.curInput = player.inputs[j];
                 }
                 foreach(var qPlayer in Players)
                 {
                     foreach(var wPlayer in Players)
                     {
-                        if (wPlayer.x == qPlayer.x && wPlayer.y == qPlayer.y && wPlayer.id != qPlayer.id)
+                        if ((wPlayer.x == qPlayer.x || wPlayer.x == qPlayer.xA) && (wPlayer.y == qPlayer.y || wPlayer.y == qPlayer.yA) && wPlayer.id != qPlayer.id)
                         {
                             qPlayer.HandleCollision(wPlayer,qPlayer, map);
                         }
                     }
                 }
+                foreach (var player in Players)
+                {
+                    curTurn.players.Append(player);
+                    Console.WriteLine(curTurn.players);
+                }
+                turnData.Append(curTurn);
+
 
              
                 map.printMap(Players);
                 Console.WriteLine("enter anything to continue");
                 Console.ReadLine();
             }
+            string test = JsonSerializer.Serialize<Turn[]>(turnData);
+            Console.WriteLine(test);
         }
     }
 }
