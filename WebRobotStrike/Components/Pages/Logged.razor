@@ -1,0 +1,35 @@
+﻿@page "/logged"
+@inject BlazorApp1.UsersServices.UsersService UsersService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>@cookieStatusMessage</h3>
+
+@if (cookieStatus)
+{
+    <h3>Bienvenue sur la carte !</h3>
+    <p>eoiqfnnqs</p>
+}
+else
+{
+    <p>Vous devez être connecté pour accéder à cette page.</p>
+    <button @onclick="RedirectToLogin">Se connecter</button>
+}
+
+@code {
+    private bool cookieStatus;
+    private string cookieStatusMessage;
+
+    // Méthode asynchrone pour initialiser l'état
+    protected override async Task OnInitializedAsync()
+    {
+        // Vérifier si le cookie est présent
+        cookieStatus = UsersService.IsCookieSet();  // Méthode asynchrone
+        cookieStatusMessage = cookieStatus ? "Cookie trouvé!" : "Cookie introuvable!";
+    }
+
+    private void RedirectToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}
