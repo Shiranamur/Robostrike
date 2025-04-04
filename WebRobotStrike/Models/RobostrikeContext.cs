@@ -17,12 +17,9 @@ public partial class RobostrikeContext : DbContext
     }
 
     public virtual DbSet<Efmigrationshistory> Efmigrationshistories { get; set; }
+    public virtual DbSet<Session> Sessions { get; set; } = null!;
 
     public virtual DbSet<User> Users { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=localhost;database=robostrike;user=root", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.31-mysql"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,27 +41,26 @@ public partial class RobostrikeContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.ToTable("users");
+            entity.ToTable("Users");
+            entity.HasIndex(e => e.Email, "Email").IsUnique();
 
-            entity.HasIndex(e => e.Email, "email").IsUnique();
+            entity.HasIndex(e => e.Username, "Username").IsUnique();
 
-            entity.HasIndex(e => e.Username, "username").IsUnique();
-
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("Id");
             entity.Property(e => e.Email)
-                .HasColumnName("email")
+                .HasColumnName("Email")
                 .UseCollation("utf8mb3_general_ci")
                 .HasCharSet("utf8mb3");
-            entity.Property(e => e.IsEmailValidated).HasColumnName("is_email_validated");
+            entity.Property(e => e.IsEmailValidated).HasColumnName("Is_email_validated");
             entity.Property(e => e.PasswordHash)
                 .HasMaxLength(255)
-                .HasColumnName("password_hash");
-            entity.Property(e => e.Points).HasColumnName("points");
+                .HasColumnName("Passwordhash");
+            entity.Property(e => e.Points).HasColumnName("Points");
             entity.Property(e => e.Salt)
                 .HasMaxLength(255)
-                .HasColumnName("salt");
+                .HasColumnName("Salt");
             entity.Property(e => e.Username)
-                .HasColumnName("username")
+                .HasColumnName("Username")
                 .UseCollation("utf8mb3_general_ci")
                 .HasCharSet("utf8mb3");
         });

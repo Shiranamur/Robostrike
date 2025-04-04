@@ -1,58 +1,57 @@
 ﻿@page "/login"
-@inject BlazorApp1.UsersServices.UsersService UsersService
+@using BlazorApp1.Services
+@using BlazorApp1.UsersServices
+@inject UsersService UsersService
+@inject SessionService SessionService
 @inject NavigationManager Navigation
-@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JS
 @rendermode InteractiveServer
-<h3>Connexion</h3>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <p style="color: red">@errorMessage</p>
-}
+<h3>Login</h3>
+<div>
+    <label>Username:</label>
+    <input @bind="username" />
 
-<form @onsubmit="HandleLogin">
-    <div>
-        <label>Nom d'utilisateur :</label>
-        <input @bind="username" />
-    </div>
-    <div>
-        <label>Mot de passe :</label>
-        <input type="password" @bind="password" />
-    </div>
-    <button type="submit">Se connecter</button>
-</form>
+    <label>Password:</label>
+    <input @bind="password" type="password" />
+
+    <button @onclick="HandleLogin">Login</button>
+
+    <div style="color:red">@errorMessage</div>
+</div>
+
+
+
 
 @code {
     private string username;
     private string password;
-    private string errorMessage = "";
+    private string errorMessage;
 
     private async Task HandleLogin()
     {
-        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        // Basic debug: 
+        Console.WriteLine("HandleLogin() called");
+
+        // Validate user
+        bool valid = await UsersService.ValidateUserLogin(username, password);
+        if (!valid)
         {
-            errorMessage = "Veuillez remplir tous les champs.";
+            errorMessage = "Invalid username or password.";
             return;
         }
 
+        // Retrieve the user
         var user = await UsersService.GetUserByUsername(username);
         if (user == null)
         {
-            errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+            errorMessage = "User not found.";
             return;
         }
-        var passwordHash = Convert.ToBase64String(
-            System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(password + user.Salt))
-        );
-
-        if (user.PasswordHash != passwordHash)
-        {
-            errorMessage = "Mot de passe incorrect.";
-            return;
-        }
-
-        Navigation.NavigateTo("/logged", forceLoad: true);
+        
+        var token = await SessionService.CreateSessionTokenAsync(user.Id);
+        await JS.InvokeVoidAsync("localStore.set", "sessionToken", token);
+        
+        Navigation.NavigateTo("/logged");
     }
-
 }
