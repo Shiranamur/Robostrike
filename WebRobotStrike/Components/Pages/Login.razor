@@ -1,0 +1,58 @@
+﻿@page "/login"
+@inject BlazorApp1.UsersServices.UsersService UsersService
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor HttpContextAccessor
+@rendermode InteractiveServer
+<h3>Connexion</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color: red">@errorMessage</p>
+}
+
+<form @onsubmit="HandleLogin">
+    <div>
+        <label>Nom d'utilisateur :</label>
+        <input @bind="username" />
+    </div>
+    <div>
+        <label>Mot de passe :</label>
+        <input type="password" @bind="password" />
+    </div>
+    <button type="submit">Se connecter</button>
+</form>
+
+@code {
+    private string username;
+    private string password;
+    private string errorMessage = "";
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            errorMessage = "Veuillez remplir tous les champs.";
+            return;
+        }
+
+        var user = await UsersService.GetUserByUsername(username);
+        if (user == null)
+        {
+            errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+            return;
+        }
+        var passwordHash = Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(password + user.Salt))
+        );
+
+        if (user.PasswordHash != passwordHash)
+        {
+            errorMessage = "Mot de passe incorrect.";
+            return;
+        }
+
+        Navigation.NavigateTo("/logged", forceLoad: true);
+    }
+
+}

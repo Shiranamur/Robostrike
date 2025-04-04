@@ -1,30 +1,63 @@
+using BlazorApp1.Components;
 using BlazorApp1.Models;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using BlazorApp1.UsersServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Ajout du service DbContext pour la base de données MySQL
+// Ajout UsersSerice
+builder.Services.AddScoped<UsersService>();
+
+// bdd
 builder.Services.AddDbContext<RobostrikeContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"), ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    ));
 
-// Ajout des services nécessaires pour l'authentification par cookie
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Account/Login"; // Redirection vers la page de login si non authentifié
-    });
+// IHttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
-// Ajout des services MVC
-builder.Services.AddControllersWithViews();
+// Ajout des services pour Razor Components
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 var app = builder.Build();
 
-// Middleware pour l'authentification
-app.UseAuthentication();
-app.UseAuthorization();
 
-// Configuration des routes
-app.MapControllers();
+app.Use(async (context, next) =>
+{
+    var usersService = context.RequestServices.GetRequiredService<UsersService>();
+
+    var isAuthenticated = usersService.IsUserAuthenticated();
+
+    if (!isAuthenticated && context.Request.Path.StartsWithSegments("/"))
+    {
+        usersService.SetUserSession(147852369);
+
+
+        context.Response.Redirect("/login");
+        return;
+    }
+
+    await next.Invoke();
+});
+
+
+
+
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseAntiforgery();
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
 
 app.Run();
