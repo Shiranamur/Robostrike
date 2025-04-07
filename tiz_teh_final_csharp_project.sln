@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35825.156 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebRobotStrike", "WebRobotStrike\WebRobotStrike.csproj", "{B0203ECF-1D2C-4283-9632-5856A75366A0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend", "Backend\Backend.csproj", "{7BF5389E-AD13-4828-AEAF-8C649859C612}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{B0203ECF-1D2C-4283-9632-5856A75366A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0203ECF-1D2C-4283-9632-5856A75366A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0203ECF-1D2C-4283-9632-5856A75366A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BF5389E-AD13-4828-AEAF-8C649859C612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BF5389E-AD13-4828-AEAF-8C649859C612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BF5389E-AD13-4828-AEAF-8C649859C612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BF5389E-AD13-4828-AEAF-8C649859C612}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

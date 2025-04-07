@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Ajout UsersSerice
 builder.Services.AddScoped<UsersService>();
-
+builder.Services.AddSingleton<QueueService>();
 builder.Services.AddScoped<SessionService>();
 
 
@@ -32,6 +32,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// middleware
 app.Use(async (context, next) =>
 {
     var authHeader = context.Request.Headers["Authorization"].ToString();
@@ -48,6 +49,7 @@ app.Use(async (context, next) =>
     }
     await next.Invoke();
 });
+
 
 
 

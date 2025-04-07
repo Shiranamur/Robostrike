@@ -9,12 +9,10 @@ namespace BlazorApp1.UsersServices
 {
     public class UsersService
     {
-        //private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly RobostrikeContext _context;
 
         public UsersService(RobostrikeContext context)
         {
-            //_httpContextAccessor = httpContextAccessor;
             _context = context;
         }
 
@@ -22,17 +20,6 @@ namespace BlazorApp1.UsersServices
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
         }
-
-        //Pas utiliser comme cookie marche pas 
-        /*public async Task<User?> GetCurrentUser()
-        {
-            var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["SessionID"];
-            if (string.IsNullOrEmpty(sessionId))
-            {
-                return null;
-            }
-            return await GetUserById(int.Parse(sessionId));
-        }*/
 
         public async Task<User?> GetUserById(int userId)
         {
@@ -75,37 +62,5 @@ namespace BlazorApp1.UsersServices
 
             return user.PasswordHash == passwordHash;
         }
-
-        /*public void SetUserSession(int userId)
-        {
-            var context = _httpContextAccessor.HttpContext;
-            if (context == null)
-            {
-                Console.WriteLine("HttpContext is null");
-                return;
-            }
-
-            var options = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(1)
-            };
-
-            context.Response.Cookies.Append("SessionID", userId.ToString(), options);
-        }*/
-
-        /*public bool IsUserAuthenticated()
-        {
-            var sessionId = _httpContextAccessor.HttpContext?.Request.Cookies["SessionID"];
-            return !string.IsNullOrEmpty(sessionId);
-        }*/
-
-        /*public bool IsCookieSet()
-        {
-            var cookieValue = _httpContextAccessor.HttpContext?.Request.Cookies["SessionID"];
-            return !string.IsNullOrEmpty(cookieValue);
-        }*/
     }
 }
