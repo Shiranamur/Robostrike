@@ -1,4 +1,4 @@
-﻿namespace WebRobotStrike.Class;
+﻿namespace BlazorApp1.Class;
 using System.Text.Json.Serialization;
 
 public class Tile

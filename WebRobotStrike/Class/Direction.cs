@@ -1,10 +1,9 @@
-﻿namespace WebRobotStrike.Models
+﻿namespace BlazorApp1.Class;
+
+public enum Direction
 {
-    public enum Direction
-    {
-        Up,
-        Right,
-        Down,
-        Left
-    }
+    Up,
+    Right,
+    Down,
+    Left
 }

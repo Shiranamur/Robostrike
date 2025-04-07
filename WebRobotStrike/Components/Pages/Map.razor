@@ -1,7 +1,7 @@
 @page "/map"
 @rendermode InteractiveServer
+@using BlazorApp1.Class
 @using System.Text.Json
-@using System.Text.Json.Serialization
 @using System.IO
 
 <h3>Map</h3>
@@ -103,17 +103,17 @@ else if (_mapTotal != null)
                                         <div class="player"
                                              @onclick:stopPropagation="true"
                                              @onclick='() => SelectPlayer(player)'> <!-- to move the player we use the select player function -->
-                                            <img class="@player.DirectionClass" src="@player.sprite" />
+                                            <img class="@player.DirectionCssClass" src="@player.Sprite" alt="Player sprite"/>
                                         </div>
                                     }
                                    
-                                   @foreach (var player in _players)
+                                   @foreach (var player in _players) // same but for the shots
                                    {
-                                       @foreach (var shoot in player._shots.Where(s => s.X == x && s.Y == y))
+                                       @foreach (var shot in player.Shots.Where(s => s.X == x && s.Y == y))
                                        {
                                            <div class="player-shot">
-                                               <img class="@shoot.DirectionClass" src="@shoot.Sprite" />
-                                           </div>
+                                               <img class="@shot.DirectionCssClass" src="@shot.Sprite" alt="player shot sprite"/>
+                                            </div>
                                        }
                                    }                  
                                 </div>
@@ -293,7 +293,7 @@ else if (_mapTotal != null)
         top: 10%;
         left: 10%;
         border-radius: 50%;
-        diplay: flex;
+        display: flex;
         align-items: center;
         justify-content: center;
         color: white;
@@ -333,15 +333,15 @@ else if (_mapTotal != null)
 @code {
 
     // variables utilisées entre le html et le code
-    private MapTotal? _mapTotal;
+    private BlazorApp1.Class.Map? _mapTotal;
     private IBrowserFile? _selectedFile;
     private string _mapJsonText = "";
     private string? _errorMessage;
 
     // variables pour modifier le comportement de l'affiachage
     private int _tileSize = 50;
-    private bool _showCoordinates = false;
-    private MapCase? _selectedTile;
+    private bool _showCoordinates;
+    private Tile? _selectedTile;
 
     // players logic
     private List<Player> _players = new();
@@ -374,7 +374,7 @@ else if (_mapTotal != null)
         _tileSize = Math.Max(20, _tileSize - 10);
     }
 
-    private void ShowTileDetails(MapCase tile)
+    private void ShowTileDetails(Tile tile)
     {
         _selectedTile = tile;
     }
@@ -393,7 +393,7 @@ else if (_mapTotal != null)
             // opens the file 1Mb limit
             using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
             using var memoryStream = new MemoryStream();
-            // copy the content into a memorystream, simply said it just copies the data into memory
+            // copy the content into a memory stream, simply said it just copies the data into memory
             await stream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
@@ -405,7 +405,7 @@ else if (_mapTotal != null)
             Console.WriteLine($"JSON content: {json.Substring(0, Math.Min(100, json.Length))}...");
 
             // deserialize to use the data
-            _mapTotal = JsonSerializer.Deserialize<MapTotal>(json, _jsonOptions);
+            _mapTotal = JsonSerializer.Deserialize<BlazorApp1.Class.Map>(json, _jsonOptions);
 
             if (_mapTotal == null)
             {
@@ -417,7 +417,7 @@ else if (_mapTotal != null)
                 // sneek another peek... this time formated
                 Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
 
-                // after successfull loading we check spawnpoints and initialise players
+                // after successful loading we check spawn points and initialise players
                 FindSpawnPoints();
                 InitializePlayers();
                 Console.WriteLine($"Spawn points found: {_spawnPoints.Count}");
@@ -437,7 +437,7 @@ else if (_mapTotal != null)
         }
     }
 
-    // for pasted map content is limited to 10*10 for unknown reasons, surelly because of text size but this is speculation
+    // for pasted map content is limited to 10*10 for unknown reasons, surely because of text size but this is speculation
     public void ParseMapFromText()
     {
         if (string.IsNullOrWhiteSpace(_mapJsonText)) return;
@@ -449,7 +449,7 @@ else if (_mapTotal != null)
         {
             // same as above but with less steps, yes they could be combined but hey...
             Console.WriteLine($"Parsing JSON text: {_mapJsonText.Substring(0, Math.Min(100, _mapJsonText.Length))}...");
-            _mapTotal = JsonSerializer.Deserialize<MapTotal>(_mapJsonText, _jsonOptions);
+            _mapTotal = JsonSerializer.Deserialize<BlazorApp1.Class.Map>(_mapJsonText, _jsonOptions);
 
             if (_mapTotal == null)
             {
@@ -485,259 +485,6 @@ else if (_mapTotal != null)
         return $"images/Tiles/{tileType.ToLowerInvariant()}.png";
     }
 
-    public class MapCase
-    {
-        [JsonPropertyName("x")] public int PosX { get; set; }
-
-        [JsonPropertyName("y")] public int PosY { get; set; }
-
-        [JsonPropertyName("type")] public required string Type { get; set; }
-    }
-
-    public class MapTotal
-    {
-        [JsonPropertyName("map_width")] public int MapWidth { get; init; }
-
-        [JsonPropertyName("map_height")] public int MapHeight { get; init; }
-
-        [JsonPropertyName("tiles")] public List<MapCase> Tiles { get; init; } = [];
-    }
-
-    public enum Direction
-    {
-        Up,
-        Right,
-        Down,
-        Left
-    }
-
-    public class Shoot
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public string Sprite = "images/Sprites/plasma_player1.png";
-        public Direction Direction { get; set; }
-        public Player Parent { get; set; }
-
-        public Shoot(int x, int y, Direction direction, Player parent)
-        {
-            X = x;
-            Y = y;
-            Direction = direction;
-            Parent = parent;
-            // Remove the AnimateAsync call here
-        }
-
-        public string DirectionClass => Direction switch
-        {
-            Direction.Up => "rotation_up",
-            Direction.Right => "rotation_right",
-            Direction.Down => "rotation_down",
-            Direction.Left => "rotation_left",
-            _ => "rotation_up"
-        };
-
-        // Update this method to return a bool indicating if the shot should be removed
-        public bool Move()
-        {
-            switch (this.Direction)
-            {
-                case Direction.Up:
-                    Y -= 1;
-                    break;
-                case Direction.Left:
-                    X -= 1;
-                    break;
-                case Direction.Right:
-                    X += 1;
-                    break;
-                case Direction.Down:
-                    Y += 1;
-                    break;
-                default:
-                    Console.WriteLine("Unknown direction unable to move");
-                    break;
-            }
-
-            // Check if shot is out of bounds or hit an obstacle
-            return IsOutOfBounds() || HitObstacle();
-        }
-
-        private bool IsOutOfBounds()
-        {
-            // Check map boundaries if MapData is accessible
-            return X < 0 || Y < 0 ||
-                   (Parent?.MapData != null && (X >= Parent.MapData.MapWidth || Y >= Parent.MapData.MapHeight));
-        }
-
-        private bool HitObstacle()
-        {
-            // Check if hit a wall or other obstacle
-            // Implementation depends on how you want to detect collisions
-            return false;
-        }
-    }
-
-    public class Player
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public string Name { get; set; }
-        public string sprite = "images/Sprites/player1.png";
-        public Direction Direction { get; set; } = Direction.Up;
-        public List<Shoot> _shots { get; set; } = new List<Shoot>();
-        public MapTotal MapData { get; set; }
-
-        public Player(int x, int y, string name, MapTotal? mapData = null)
-        {
-            X = x;
-            Y = y;
-            Name = name;
-            MapData = mapData;
-        }
-
-        // Convert enum to CSS class name
-        public string DirectionClass => Direction switch
-        {
-            Direction.Up => "rotation_up",
-            Direction.Right => "rotation_right",
-            Direction.Down => "rotation_down",
-            Direction.Left => "rotation_left",
-            _ => "rotation_up"
-        };
-
-
-
-        // function to move players, checks for out of bound and walls, but can still walk on "void" tiles, i means i tought would be more funny to 'fall' and lose like this
-        public void MovePlayer(Player player, bool move)
-        {
-            Console.WriteLine("tryin to move before condition");  
-            Console.WriteLine($"player : {player}, player.MapData :{player.MapData}");
-            if (player == null || player.MapData == null) return;
-            Console.WriteLine("tryin to move");            
-
-            if (move)
-            {
-                switch (player.Direction)
-                {
-                    case Direction.Down:
-                        if (player.Y + 1 < MapData.MapHeight)
-                        {
-                            player.Y += 1;
-                        }
-
-                        break;
-
-                    case Direction.Up:
-                        if (player.Y - 1 >= 0)
-                        {
-                            player.Y -= 1;
-                        }
-
-                        break;
-
-                    case Direction.Left:
-                        if (player.X - 1 >= 0)
-                        {
-                            player.X -= 1;
-                        }
-
-                        break;
-
-                    case Direction.Right:
-                        if (player.X + 1 < MapData.MapWidth)
-                        {
-                            player.X += 1;
-                        }
-
-                        break;
-
-                    default:
-                        Console.WriteLine("Didn't know the direction of the player");
-                        break;
-                }
-            }
-            else
-            {
-                switch (player.Direction)
-                {
-                    case Direction.Down:
-                        if (player.Y - 1 >= 0)
-                        {
-                            player.Y -= 1;
-                        }
-
-                        break;
-
-                    case Direction.Up:
-                        if (player.Y + 1 < MapData.MapHeight)
-                        {
-                            player.Y += 1;
-                        }
-
-                        break;
-
-                    case Direction.Left:
-                        if (player.X + 1 < MapData.MapWidth)
-                        {
-                            player.X += 1;
-                        }
-
-                        break;
-
-                    case Direction.Right:
-                        if (player.X - 1 >= 0)
-                        {
-                            player.X -= 1;
-                        }
-
-                        break;
-
-                    default:
-                        Console.WriteLine("Didn't know the direction of the player");
-                        break;
-                }
-            }
-        }
-
-        public void RotatePlayer(Player player, bool rotateRight)
-        {
-            if (player == null) return;
-
-            // Calculate new direction based on current direction and rotation direction
-            int directionCount = Enum.GetValues<Direction>().Length;
-            int currentDirection = (int)player.Direction;
-
-            // For right rotation: add 1 and wrap around
-            // For left rotation: subtract 1 and wrap around
-            int newDirection = rotateRight
-                ? (currentDirection + 1) % directionCount
-                : (currentDirection - 1 + directionCount) % directionCount;
-
-            player.Direction = (Direction)newDirection;
-        }
-
-        public void MoveAllShots()
-        {
-            List<Shoot> shotsToRemove = new List<Shoot>();
-
-            foreach (var shot in _shots)
-            {
-                bool shouldRemove = shot.Move();
-                if (shouldRemove)
-                {
-                    shotsToRemove.Add(shot);
-                }
-            }
-
-            // Remove shots that went out of bounds
-            foreach (var shot in shotsToRemove)
-            {
-                _shots.Remove(shot);
-            }
-        }
-    }
-
     // needs to check every tile
     private void FindSpawnPoints()
     {
@@ -746,7 +493,7 @@ else if (_mapTotal != null)
         {
             foreach (var tile in _mapTotal.Tiles)
             {
-                if (tile.Type == "spawn_tile")
+                if (tile.Type == "spawn")
                 {
                     _spawnPoints.Add((tile.PosX, tile.PosY));
                 }
@@ -767,9 +514,10 @@ else if (_mapTotal != null)
                 {
                     return;
                 }
-
+                // todo : change this placeholder number
+                int placeholder = 1; 
                 // here we count a new player in the game
-                _players.Add(new Player(spawnPoint.X, spawnPoint.Y, "Player1", _mapTotal));
+                _players.Add(new Player(placeholder, spawnPoint.X, spawnPoint.Y, "Player1", _mapTotal));
             }
         }
     }
@@ -784,12 +532,10 @@ else if (_mapTotal != null)
     // Update movement methods to trigger shot movement
     private void MoveForward()
     {
-        Console.WriteLine("Checking to move player");
         if (_selectedPlayer != null)
         {
-            Console.WriteLine("Player found !");
-            _selectedPlayer.MovePlayer(_selectedPlayer, true);
-            _selectedPlayer.MoveAllShots();
+            _selectedPlayer.MoveForward(true);
+            _selectedPlayer.MoveShots();
             StateHasChanged();
         }
     }
@@ -798,8 +544,8 @@ else if (_mapTotal != null)
     {
         if (_selectedPlayer != null)
         {
-            _selectedPlayer.MovePlayer(_selectedPlayer, false);
-            _selectedPlayer.MoveAllShots();
+            _selectedPlayer.MoveForward(false);
+            _selectedPlayer.MoveShots();
             StateHasChanged();
         }
     }
@@ -808,8 +554,8 @@ else if (_mapTotal != null)
     {
         if (_selectedPlayer != null)
         {
-            _selectedPlayer.RotatePlayer(_selectedPlayer, true);
-            _selectedPlayer.MoveAllShots();
+            _selectedPlayer.RotateRight(true);
+            _selectedPlayer.MoveShots();
             StateHasChanged();
         }
     }
@@ -818,8 +564,8 @@ else if (_mapTotal != null)
     {
         if (_selectedPlayer != null)
         {
-            _selectedPlayer.RotatePlayer(_selectedPlayer, false);
-            _selectedPlayer.MoveAllShots();
+            _selectedPlayer.RotateRight(false);
+            _selectedPlayer.MoveShots();
             StateHasChanged();
         }
     }
@@ -828,9 +574,11 @@ else if (_mapTotal != null)
     {
         if (_selectedPlayer != null)
         {
-            var shot = new Shoot(_selectedPlayer.X, _selectedPlayer.Y, _selectedPlayer.Direction, _selectedPlayer);
-            _selectedPlayer._shots.Add(shot);
-            _selectedPlayer.MoveAllShots();
+            var shot = new Shot(_selectedPlayer.X, _selectedPlayer.Y, _selectedPlayer, _mapTotal);
+            _selectedPlayer.Shots.Add(shot);
+            Console.WriteLine($"Shot added here onto player id :{_selectedPlayer.Id}");
+            Console.WriteLine($"Player shots count{_selectedPlayer.Shots.Count}");
+            _selectedPlayer.MoveShots();
             StateHasChanged();
         }
     }

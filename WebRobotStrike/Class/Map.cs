@@ -1,6 +1,5 @@
-﻿using System.Text.Json.Serialization;
-
-namespace WebRobotStrike.Class;
+﻿namespace BlazorApp1.Class;
+using System.Text.Json.Serialization;
 
 public class Map
 {
