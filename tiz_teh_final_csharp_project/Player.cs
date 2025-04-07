@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace tiz_teh_final_csharp_project
 {
@@ -10,8 +11,11 @@ namespace tiz_teh_final_csharp_project
         public char direction { get; set;}
         public char curInput { get; set; }
         public string inputs { get; set;}
-        public int xA;
-        public int yA;
+        [JsonPropertyName("previousX")]
+        public int xA { get; set; }
+        [JsonPropertyName("previousY")]
+        public int yA { get; set; }
+        public int events { get; set; }
         public int push = 0;
         public char pushDirection;
 

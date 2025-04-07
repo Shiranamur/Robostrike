@@ -7,11 +7,11 @@ namespace tiz_teh_final_csharp_project
     public class Turn
     {
         public int turnNumber { get; set; }
-        public List<Player> players { get; set; }
+        public List<Player> Players { get; set; }
         public Turn(int turnNumber, List<Player> players)
         {
             this.turnNumber = turnNumber;
-            this.players = players;
+            Players = players;
         }
 
 
@@ -96,10 +96,13 @@ namespace tiz_teh_final_csharp_project
         }
         public void GameLoop()
         {
-            Turn[] turnData = new Turn[6];
             map.printMap(Players);
+           // int[] playerList = new int[8];
+            int i = 1;
             foreach (var player in Players)
             {
+                player.id = i;
+                i += 1;
                 player.xA = player.x;
                 player.yA = player.y;
                 if (player == null)
@@ -108,13 +111,17 @@ namespace tiz_teh_final_csharp_project
                     continue;
                 }
                 player.inputs = player.EnterInput(player);
-            }
+            }                
+            Turn curTurn = new Turn(0, Players);
+            string test = JsonSerializer.Serialize(curTurn);
+            Console.WriteLine(test);
             for (int j = 0; j < 6; j++)
             {
-                Turn curTurn = new Turn(j, Players);
+
 
                 foreach (var player in Players)
                 {
+                    player.events = 0;
                     ReadInput(player, player.inputs[j], map);
                     player.curInput = player.inputs[j];
                 }
@@ -125,24 +132,20 @@ namespace tiz_teh_final_csharp_project
                         if ((wPlayer.x == qPlayer.x || wPlayer.x == qPlayer.xA) && (wPlayer.y == qPlayer.y || wPlayer.y == qPlayer.yA) && wPlayer.id != qPlayer.id)
                         {
                             qPlayer.HandleCollision(wPlayer,qPlayer, map);
+                            qPlayer.events = 1;
+                            wPlayer.events = 1;
                         }
                     }
                 }
-                foreach (var player in Players)
-                {
-                    curTurn.players.Append(player);
-                    Console.WriteLine(curTurn.players);
-                }
-                turnData.Append(curTurn);
-
-
-             
+                curTurn = new Turn(j, Players);        
                 map.printMap(Players);
                 Console.WriteLine("enter anything to continue");
                 Console.ReadLine();
+                test = JsonSerializer.Serialize(curTurn);
+                Console.WriteLine(test);
             }
-            string test = JsonSerializer.Serialize<Turn[]>(turnData);
-            Console.WriteLine(test);
+            
+
         }
     }
 }
