@@ -1,6 +1,4 @@
-using System.Text.Json.Serialization;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
 namespace tiz_teh_final_csharp_project
@@ -11,12 +9,12 @@ namespace tiz_teh_final_csharp_project
     /// </summary>
     public class Turn
     {
-        public int turnNumber { get; set; }
+        public int TurnNumber { get; set; }
         public List<Player> Players { get; set; }
 
         public Turn(int turnNumber, List<Player> players)
         {
-            this.turnNumber = turnNumber;
+            this.TurnNumber = turnNumber;
             Players = players;
         }
     }
@@ -31,6 +29,8 @@ namespace tiz_teh_final_csharp_project
         public Map map { get; set; }
         public List<Player> Players { get; set; }
         public string MatchId { get; set; }
+
+        private int currentRound = 0;
 
         // Stocke les inputs des joueurs pour chaque round.
         // Key: numéro de round ; Value: dictionnaire associant l'id du joueur à son caractère d'entrée.
@@ -137,10 +137,10 @@ namespace tiz_teh_final_csharp_project
         /// <param name="roundNumber">Le numéro du round en cours.</param>
         /// <param name="playerId">L'identifiant du joueur.</param>
         /// <param name="input">L'entrée saisie par le joueur.</param>
-        public void SubmitPlayerInput(int roundNumber, int playerId, char input)
+        public void SubmitPlayerInput(int playerId, char input)
         {
             // Récupère ou crée le dictionnaire des inputs pour le round.
-            var inputs = _roundInputs.GetOrAdd(roundNumber, new Dictionary<int, char>());
+            var inputs = _roundInputs.GetOrAdd(currentRound, new Dictionary<int, char>());
             lock (inputs)
             {
                 inputs[playerId] = input;
@@ -148,7 +148,7 @@ namespace tiz_teh_final_csharp_project
                 if (inputs.Count >= Players.Count)
                 {
                     // Signale que la collecte d'inputs est terminée.
-                    if (_roundInputCompletionSources.TryGetValue(roundNumber, out var tcs))
+                    if (_roundInputCompletionSources.TryGetValue(currentRound, out var tcs))
                     {
                         tcs.TrySetResult(true);
                     }
@@ -161,10 +161,10 @@ namespace tiz_teh_final_csharp_project
         /// Appelée avec WaitForRoundInputsAsync(int roundNumber) et retourne une Task qui se complète quand tous les inputs sont reçus.
         /// </summary>
         /// <param name="roundNumber">Le numéro du round.</param>
-        private async Task WaitForRoundInputsAsync(int roundNumber)
+        private async Task WaitForRoundInputsAsync()
         {
             var tcs = new TaskCompletionSource<bool>();
-            _roundInputCompletionSources[roundNumber] = tcs;
+            _roundInputCompletionSources[currentRound] = tcs;
             
             // Vous pouvez ajouter un timeout ici si nécessaire.
             await tcs.Task.ConfigureAwait(false);
@@ -175,15 +175,15 @@ namespace tiz_teh_final_csharp_project
         /// Appelée avec ProcessRoundAsync(int roundNumber) et retourne une Task.
         /// </summary>
         /// <param name="roundNumber">Le numéro du round à traiter.</param>
-        private async Task ProcessRoundAsync(int roundNumber)
+        private async Task ProcessRoundAsync()
         {
             // Attend que tous les joueurs aient soumis leur input pour ce round.
-            await WaitForRoundInputsAsync(roundNumber);
+            await WaitForRoundInputsAsync();
 
             // Récupère les inputs pour le round.
-            if (!_roundInputs.TryGetValue(roundNumber, out var inputs))
+            if (!_roundInputs.TryGetValue(currentRound, out var inputs))
             {
-                Console.WriteLine($"No inputs received for round {roundNumber}");
+                Console.WriteLine($"No inputs received for round {currentRound}");
                 return;
             }
 
@@ -198,7 +198,7 @@ namespace tiz_teh_final_csharp_project
                 }
                 else
                 {
-                    Console.WriteLine($"Player {player.id} did not submit input for round {roundNumber}.");
+                    Console.WriteLine($"Player {player.id} did not submit input for round {currentRound}.");
                 }
             }
             
@@ -228,7 +228,7 @@ namespace tiz_teh_final_csharp_project
         {
             for (int j = 0; j < 6; j++)
             {
-                await ProcessRoundAsync(j);
+                await ProcessRoundAsync();
                 
                 Turn curTurn = new Turn(j, Players);
                 string roundStateJson = JsonSerializer.Serialize(curTurn);
@@ -245,16 +245,6 @@ namespace tiz_teh_final_csharp_project
         /// </summary>
         public async Task StartGameAsync()
         {
-            if (map == null)
-            {
-                Console.WriteLine("Game: Map is null in StartGameAsync.");
-                return;
-            }
-            if (Players == null)
-            {
-                Console.WriteLine("Game: Players list is null in StartGameAsync.");
-                return;
-            }
             await GameLoopAsync();
         }
         
