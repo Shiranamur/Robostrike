@@ -13,6 +13,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// show environment type
+Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
