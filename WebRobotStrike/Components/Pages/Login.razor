@@ -1,0 +1,57 @@
+﻿@page "/login"
+@using BlazorApp1.Services
+@using BlazorApp1.UsersServices
+@inject UsersService UsersService
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<h3>Login</h3>
+<div>
+    <label>Username:</label>
+    <input @bind="username" />
+
+    <label>Password:</label>
+    <input @bind="password" type="password" />
+
+    <button @onclick="HandleLogin">Login</button>
+
+    <div style="color:red">@errorMessage</div>
+</div>
+
+
+
+
+@code {
+    private string username;
+    private string password;
+    private string errorMessage;
+
+    private async Task HandleLogin()
+    {
+        // Basic debug: 
+        Console.WriteLine("HandleLogin() called");
+
+        // Validate user
+        bool valid = await UsersService.ValidateUserLogin(username, password);
+        if (!valid)
+        {
+            errorMessage = "Invalid username or password.";
+            return;
+        }
+
+        // Retrieve the user
+        var user = await UsersService.GetUserByUsername(username);
+        if (user == null)
+        {
+            errorMessage = "User not found.";
+            return;
+        }
+        
+        var token = await SessionService.CreateSessionTokenAsync(user.Id);
+        await JS.InvokeVoidAsync("localStore.set", "sessionToken", token);
+        
+        Navigation.NavigateTo("/logged");
+    }
+}

@@ -1,0 +1,18 @@
+﻿CREATE TABLE Users (
+                       Id INT AUTO_INCREMENT PRIMARY KEY,
+                       Username VARCHAR(255) NOT NULL UNIQUE,
+                       Email VARCHAR(255) NOT NULL UNIQUE,
+                       Is_email_validated BOOLEAN NOT NULL DEFAULT FALSE,
+                       Passwordhash VARCHAR(255) NOT NULL,
+                       Salt VARCHAR(255) NOT NULL,
+                       Points INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE Sessions (
+                          SessionId VARCHAR(100) PRIMARY KEY,
+                          UserId INT NOT NULL,
+                          CreatedAt DATETIME NOT NULL,
+                          ExpiresAt DATETIME NOT NULL,
+                          IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+                          FOREIGN KEY (UserId) REFERENCES Users(Id)
+);
