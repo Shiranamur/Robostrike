@@ -18,6 +18,7 @@ else
 {
     <h3>Welcome, you are authenticated!</h3>
     <button @onclick="HandleLogout">Logout</button>
+    <button @onclick="Matchmaking">Launch Matchmaking</button>
 }
 
 @code {
@@ -64,5 +65,28 @@ else
 
         // Optionally redirect or show a logged-out message
         Navigation.NavigateTo("/login");
+    }
+
+    private async Task Matchmaking()
+    {
+        using var httpClient = new HttpClient();
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStore.get", "sessionToken"); // get token
+            // add token into header
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token); 
+            HttpResponseMessage response = await httpClient.GetAsync("http://127.0.0.1:5181/api/matchmaking/join");
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine("Response recieved");
+            Console.WriteLine(responseBody);
+            
+            Navigation.NavigateTo("/matchmaking");
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine($"Request errror: {e.Message}");
+        }
     }
 }
