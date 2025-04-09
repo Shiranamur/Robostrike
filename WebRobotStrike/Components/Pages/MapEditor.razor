@@ -155,7 +155,7 @@
     private MapTotal? mapData;
     private string selectedTileType = "void";
     private bool isPainting = false;
-    private List<string> availableTileTypes = new() { "void", "normal", "wall", "bonus_on", "spawn_tile" };
+    private List<string> availableTileTypes = new() { "void", "normal", "wall", "bonus_on", "spawn" };
     private string? errorMessage = null;
 
     protected override Task OnAfterRenderAsync(bool firstRender)
@@ -283,7 +283,7 @@
         int spawn = 0;
         for (int i = 0; i < mapData.Tiles.Count; i++)
         {
-            if (mapData.Tiles[i].Type == "spawn_tile")
+            if (mapData.Tiles[i].Type == "spawn")
             {
                 spawn += 1;
             }
