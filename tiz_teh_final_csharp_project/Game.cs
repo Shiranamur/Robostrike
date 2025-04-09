@@ -108,6 +108,7 @@ namespace tiz_teh_final_csharp_project
         /// <summary>
         /// Retourne l'état initial de la partie.
         /// Appelée avec GetInitialState() et retourne un objet anonyme contenant le MatchId, la carte et la liste des joueurs avec leurs positions et directions.
+        /// réponse à la requête : GET /api/matchmaking/longpoll
         /// </summary>
         /// <returns>Un objet représentant l'état initial du jeu.</returns>
         public object GetInitialState()
@@ -131,6 +132,7 @@ namespace tiz_teh_final_csharp_project
         /// Soumet une entrée de joueur pour un round donné.
         /// Appelée avec SubmitPlayerInput(int roundNumber, int playerId, char input) et retourne void.
         /// Elle enregistre l'input du joueur et, si tous les inputs sont reçus, déclenche la complétion de la tâche d'attente.
+        /// est trigger par : POST /api/game/{matchId}/round
         /// </summary>
         /// <param name="roundNumber">Le numéro du round en cours.</param>
         /// <param name="playerId">L'identifiant du joueur.</param>
