@@ -2,22 +2,20 @@
 
 public class QueueManager
 {
-    private readonly List<Player> _playerQueue = new List<Player>();
+    private readonly List<int> _playerQueue = new List<int>();
 
-    public void EnqueuePlayer(Player player)
+    public void EnqueuePlayer(int playerId)
     {
-        _playerQueue.Add(player);
+        _playerQueue.Add(playerId);
     }
     
-    public List<Player> GetPlayerQueue() => _playerQueue.ToList();
+    public List<int> GetQueuedPlayerIds() => _playerQueue.ToList();
 
-    public void RemovePlayers(List<Player> players)
+    public void RemovePlayers(List<int> players)
     {
-        foreach (var player in players)
+        foreach (var id in players)
         {
-            _playerQueue.Remove(player);
+            _playerQueue.Remove(id);
         }
     }
-    
-
 }

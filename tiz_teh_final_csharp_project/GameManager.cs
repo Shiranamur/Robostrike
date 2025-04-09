@@ -14,25 +14,24 @@ public class GameManager
         _mapHelper = mapHelper;
     }
 
-    public async Task<Object> WaitForGameCreationAsync()
+    public async Task<object> WaitForGameCreationAsync()
     {
-
-        while (_queueManager.GetPlayerQueue().Count < MinimumPlayers)
+        while (_queueManager.GetQueuedPlayerIds().Count < MinimumPlayers)
         {
             await Task.Delay(500);
         }
-        
-        var players = _queueManager.GetPlayerQueue().Take(MinimumPlayers).ToList();
+        var queuedIds = _queueManager.GetQueuedPlayerIds().Take(MinimumPlayers).ToList();
+        List<Player> players = queuedIds.Select(id => new Player { id = id }).ToList();
         var mapFile = _mapHelper.PickRandomMap();
-        // wtf is a Guid.NewGuide
         var matchId = Guid.NewGuid().ToString();
-        var game = new Game(mapFile, players) {MatchId=matchId};
+        var game = new Game(mapFile, players);
+        /*{
+            MatchId = matchId
+        };*/
         _activeGames.Add(matchId, game);
-        _queueManager.RemovePlayers(players);
-        _ = Task.Run(( )=> game.StartGame());
-        
-        Console.WriteLine($"Game created: {matchId}");
-        return new { message = "game created", matchId = matchId };
+        _queueManager.RemovePlayers(queuedIds);
+        _ = Task.Run(() => game.StartGame());
+        return new { message = "Game created", matchId = matchId };
     }
 
     public Game GetGame(string matchId)

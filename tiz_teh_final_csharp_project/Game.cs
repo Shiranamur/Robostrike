@@ -21,6 +21,8 @@ namespace tiz_teh_final_csharp_project
     {
         public Map map { get; set; }
         public List<Player> Players { get; set; }
+        
+        public string MatchId { get; set; }
 
         public Game(string mapFile, List<Player> players)
         {
@@ -41,17 +43,32 @@ namespace tiz_teh_final_csharp_project
             {
                 Console.WriteLine("Failed to deserialize map.");
             }
-
             
-            if (players == null)
+            if (players == null || players.Count == 0)
             {
-                Console.WriteLine("Game: Players list is null.");
+                Console.WriteLine("Game: Players list is null or empty.");
                 return;
             }
             
             Players = players;
             
+            InitializePlayers();
+
             Console.WriteLine($"Game: Initialized with {Players.Count} players.");
+        }
+        
+        private void InitializePlayers()
+        {
+            int spacing = map.Width / (Players.Count + 1);
+            int pos = spacing;
+            foreach (var player in Players)
+            {
+                player.x = pos;
+                player.y = 0;
+                player.direction = 'S';
+                player.inputs = "zzzzzz";
+                pos += spacing;
+            }
         }
 
         public void StartGame()
