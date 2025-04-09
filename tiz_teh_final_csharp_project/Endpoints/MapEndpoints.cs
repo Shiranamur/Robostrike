@@ -18,7 +18,6 @@ public class MapEndPoints : IEndpointMapper
         {
             try
             {
-                Console.WriteLine("API CALL map");
                 // read json from request body
                 using StreamReader reader = new(request.Body);
                 string jsonContent = await reader.ReadToEndAsync();
@@ -30,20 +29,9 @@ public class MapEndPoints : IEndpointMapper
                 };
 
                 Map? map = JsonSerializer.Deserialize<Map>(jsonContent, options);
-                Console.WriteLine(map);
 
                 if (map == null)
                     return Results.BadRequest("invalid map data");
-
-                Console.WriteLine($"Map Width: {map.Width}, Map Height: {map.Height}");
-                Console.WriteLine($"Tile count: {map.tiles.Count}");
-
-                foreach (Tile tile in map.tiles)
-                {
-                    Console.WriteLine($"X: {tile.X} " +
-                                    $"Y: {tile.Y} " +
-                                    $"Type: {tile.Type}");
-                }
 
                 return Results.Ok(new MapResponse
                 {
@@ -61,6 +49,7 @@ public class MapEndPoints : IEndpointMapper
         .Produces<MapResponse>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status500InternalServerError)
+        .Produces(StatusCodes.Status401Unauthorized)
         .WithOpenApi(ConfigureOpenApiOperation);
     }
 

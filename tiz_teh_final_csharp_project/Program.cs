@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using tiz_teh_final_csharp_project.Endpoints;
 using tiz_teh_final_csharp_project;
+using tiz_teh_final_csharp_project.Endpoints;
 using tiz_teh_final_csharp_project.Extensions;
+using tiz_teh_final_csharp_project.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +20,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Register the middleware
-builder.Services.AddTransient<Middleware>();
+/* var connectionString = builder.Configuration.GetConnectionString("MariaDBConnection");
+if(string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'MariaDBConnection' not found.");
+}*/
+builder.Services.AddTransient<IUserRepository>(provider => new UserRepository("Server=localhost;Port=3306;Database=robotstrike;User=root;Password=root;"));
 
 
 var app = builder.Build();
@@ -34,6 +41,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Use the custom middleware without registering it in DI manually.
+app.UseMiddleware<Middleware>();
 
 // Dynamically add all endpoint mappings
 app.Endpoints();
