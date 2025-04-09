@@ -9,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Ajout UsersSerice
 builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<SessionService>();
+builder.Services.AddHttpClient();
+
 
 
 // bdd

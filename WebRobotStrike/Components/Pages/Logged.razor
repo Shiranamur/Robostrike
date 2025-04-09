@@ -1,68 +1,51 @@
 ﻿@page "/logged"
-@using BlazorApp1.Services
-@inject SessionService SessionService
-@inject NavigationManager Navigation
+@inject HttpClient Http
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-@if (!isReady)
-{
-    <p>Loading...</p>
-}
-else if (!isLoggedIn)
-{
-    <p>You must be logged in!</p>
-    <button @onclick="GoLogin">Go to Login</button>
-}
-else
-{
-    <h3>Welcome, you are authenticated!</h3>
-    <button @onclick="HandleLogout">Logout</button>
-}
+<h3>Page Logged</h3>
+
+<button @onclick="JoinMatchmaking">Rejoindre le matchmaking</button>
+
+<p>@message</p>
 
 @code {
-    private bool isReady;       // Has the circuit fully rendered & we’ve done the JS check?
-    private bool isLoggedIn;    // Did we find a valid token?
+    private string message = string.Empty;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private string sessionToken = string.Empty;
+    /// <summary>
+    /// Appel l'endpoint /api/matchmaking/join pour inscrire un joueur dans la file.
+    /// La réponse est affichée dans un paragraphe.
+    /// </summary>
+    private async Task JoinMatchmaking()
     {
-        if (firstRender)
+        try
         {
-            // This runs AFTER the Blazor circuit is established, so JS interop is allowed.
-            var token = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
-
-            if (!string.IsNullOrEmpty(token))
+            sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
+            
+            if (string.IsNullOrEmpty(sessionToken))
             {
-                // Check with the server if token is valid
-                var user = await SessionService.ValidateSessionTokenAsync(token);
-                isLoggedIn = (user != null);
+                Navigation.NavigateTo("/login");
+                return;
+            }
+            
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+            
+            var response = await Http.GetAsync("http://localhost:5181/api/matchmaking/join");
+            if (response.IsSuccessStatusCode)
+            {
+                message = await response.Content.ReadAsStringAsync();
             }
             else
             {
-                isLoggedIn = false;
+                message = $"Erreur: {response.StatusCode}";
             }
-
-            isReady = true;
-            StateHasChanged();  // Re-render with updated values
         }
-    }
-
-    private void GoLogin()
-    {
-        Navigation.NavigateTo("/login");
-    }
-
-    private async Task HandleLogout()
-    {
-        // If you want to fully log the user out, remove the token from localStorage
-        var token = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
-        if (!string.IsNullOrEmpty(token))
+        catch (Exception ex)
         {
-            await SessionService.InvalidateSessionTokenAsync(token);
-            await JS.InvokeVoidAsync("localStore.remove", "sessionToken");
+            message = ex.Message;
         }
-
-        // Optionally redirect or show a logged-out message
-        Navigation.NavigateTo("/login");
     }
 }
