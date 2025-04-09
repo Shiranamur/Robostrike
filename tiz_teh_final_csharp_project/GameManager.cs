@@ -25,12 +25,10 @@ public class GameManager
         var mapFile = _mapHelper.PickRandomMap();
         var matchId = Guid.NewGuid().ToString();
         var game = new Game(mapFile, players);
-        /*{
-            MatchId = matchId
-        };*/
+        game.MatchId = matchId;
         _activeGames.Add(matchId, game);
         _queueManager.RemovePlayers(queuedIds);
-        _ = Task.Run(() => game.StartGame());
+        _ = Task.Run(() => game.StartGameAsync());
         return new { message = "Game created", matchId = matchId };
     }
 
