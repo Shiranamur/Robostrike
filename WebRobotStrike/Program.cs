@@ -8,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Ajout UsersSerice
 builder.Services.AddScoped<UsersService>();
-builder.Services.AddSingleton<QueueService>();
 builder.Services.AddScoped<SessionService>();
 
 
@@ -31,27 +30,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
-
-// middleware
-app.Use(async (context, next) =>
-{
-    var authHeader = context.Request.Headers["Authorization"].ToString();
-    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
-    {
-        var token = authHeader.Substring("Bearer ".Length).Trim();
-        var sessionService = context.RequestServices.GetRequiredService<SessionService>();
-        var user = await sessionService.ValidateSessionTokenAsync(token);
-        if (user != null)
-        {
-            // Token is valid. Possibly store user in context.Items
-            context.Items["CurrentUser"] = user;
-        }
-    }
-    await next.Invoke();
-});
-
-
-
 
 app.UseHttpsRedirection();
 app.UseAntiforgery();
