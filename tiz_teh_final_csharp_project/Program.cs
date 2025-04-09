@@ -4,11 +4,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using tiz_teh_final_csharp_project.Endpoints;
+using tiz_teh_final_csharp_project;
 using tiz_teh_final_csharp_project.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddSingleton<QueueManager>();
+builder.Services.AddSingleton<GameManager>();
+builder.Services.AddSingleton<MapHelper>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
