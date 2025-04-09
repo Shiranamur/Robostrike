@@ -11,7 +11,7 @@ namespace tiz_teh_final_csharp_project.Endpoints;
 
 public class MatchmakingEndpoints : IEndpointMapper
 {
-    public void MapEndpoints(WebApplication app)
+    public void Endpoints(WebApplication app)
     {
         app.MapGet("/api/matchmaking/join", async (HttpRequest request) =>
         {

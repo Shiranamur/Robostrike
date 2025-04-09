@@ -12,12 +12,13 @@ namespace tiz_teh_final_csharp_project.Endpoints;
 
 public class MapEndPoints : IEndpointMapper
 {
-    public void MapEndpoints(WebApplication app)
+    public void Endpoints(WebApplication app)
     {
         app.MapPut("/map", async (HttpRequest request) =>
         {
             try
             {
+                Console.WriteLine("API CALL map");
                 // read json from request body
                 using StreamReader reader = new(request.Body);
                 string jsonContent = await reader.ReadToEndAsync();
