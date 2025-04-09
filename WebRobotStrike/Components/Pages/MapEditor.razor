@@ -1,0 +1,347 @@
+@page "/map/editor"
+@rendermode InteractiveServer
+@inject IJSRuntime JsRuntime
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+<h3>Map Editor</h3>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Map Settings</h5>
+    </div>
+    <div class="card-body">
+        <div class="form-group mb-3">
+            <label for="map-size" class="form-label">Select Map Size:</label>
+            <select id="map-size" class="form-select" @bind="selectedSize">
+                <option value="">Please choose a map size</option>
+                <option value="10">10×10</option>
+                <option value="15">15×15</option>
+                <option value="20">20×20</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" @onclick="UpdateMap">Update Map</button>
+    </div>
+</div>
+
+@if (mapData != null)
+{
+    <div class="row">
+        <div class="col-md-auto">
+            <div class="map-container p-2 border rounded">
+                @for (int y = 0; y < mapData.MapHeight; y++)
+                {
+                    <div class="row g-0">
+                        @for (int x = 0; x < mapData.MapWidth; x++)
+                        {
+                            var localX = x; // Capture variables for lambdas
+                            var localY = y;
+                            var tile = mapData.Tiles.FirstOrDefault(t => t.PosX == localX && t.PosY == localY);
+                            <div class="col p-0">
+                                <img src="@GetTileImagePath(tile.Type)"
+                                     class="tile"
+                                     alt="@tile.Type"
+                                     data-bs-toggle="tooltip"
+                                     title="PosX: @localX, PosY: @localY, Type: @tile.Type"
+                                     loading="lazy"
+                                     @onclick="() => PaintTile(localX, localY)"
+                                     @onmousedown="() => StartPainting()"
+                                     @onmouseover="() => PaintIfDragging(localX, localY)" 
+                                     @onmouseup="() => StopPainting()" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Tile Selector</h5>
+                </div>
+                <div class="card-body">
+                    <p>Select a tile type to use:</p>
+                    <div class="tile-options d-flex flex-wrap">
+                        @foreach (var tileType in availableTileTypes)
+                        {
+                            var type = tileType; // Capture the variable for the lambda
+                            <div class="tile-selector-item @(selectedTileType == type ? "selected" : "")"
+                                 @onclick="() => SelectTileType(type)" >
+                                <img src="images/Tiles/@(type).png"
+                                     class="tile-option"
+                                     alt="@type"
+                                     title="@ToUpperFirst(type)"
+                                />
+                                <span class="tile-label">@ToUpperFirst(type)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-auto">
+        <div class="map-container p-2 border rounded">
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" @onclick="CopyMapAsync">
+                    <i class="bi bi-clipboard"></i> Copy Map as JSON
+                </button>
+                <button class="btn btn-primary" @onclick="DownloadMapAsync">
+                    <i class="bi bi-download"></i> Download Map
+                </button>
+            </div>
+        </div>
+    </div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+    </div>
+}
+
+<style>
+    .map-container {
+        width: fit-content;
+    }
+    .tile {
+        width: 30px;
+        height: 30px;
+        margin: 1px;
+        cursor: pointer;
+    }
+
+    .tile-option {
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+    }
+    
+    .tile-selector-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 8px;
+        padding: 6px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .tile-selector-item:hover {
+        background-color: lightgrey;
+        border: 2px solid grey;
+    }
+
+    .tile-selector-item.selected {
+        background-color: rgba(13, 110, 253, 0.1);
+        border: 2px solid #0d6efd;
+    }
+
+    .tile-selector-item:not(.selected) {
+        border: 2px solid transparent;
+    }
+
+    .tile-label {
+        margin-top: 4px;
+        font-size: 0.875rem;
+        color: #495057;
+    }
+</style>
+
+@code {
+    private string selectedSize = "";
+    private MapTotal? mapData;
+    private string selectedTileType = "void";
+    private bool isPainting = false;
+    private List<string> availableTileTypes = new() { "void", "normal", "wall", "bonus_on", "spawn" };
+    private string? errorMessage = null;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // don't use it for now
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void UpdateMap()
+    {
+        if (int.TryParse(selectedSize, out int size))
+        {
+            mapData = new MapTotal(size, size);
+        }
+    }
+
+    private string GetTileImagePath(string tileType)
+    {
+        // Maps each tile type to its corresponding image
+        return $"images/tiles/{tileType.ToLowerInvariant()}.png";
+    }
+
+    // Helper method for title case
+    private string ToUpperFirst(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+
+        return char.ToUpper(text[0]) + text.Substring(1);
+    }
+
+    private void SelectTileType(string tileType)
+    {
+        selectedTileType = tileType;
+    }
+
+    private void PaintTile(int x, int y)
+    {
+        if (mapData == null) return;
+
+        var tile = mapData.Tiles.FirstOrDefault(t => t.PosX == x && t.PosY == y);
+        if (tile != null)
+        {
+            tile.Type = selectedTileType;
+        }
+    }
+
+    private void StartPainting()
+    {
+        isPainting = true;
+    }
+
+    private void StopPainting()
+    {
+        isPainting = false;
+    }
+
+    private void PaintIfDragging(int x, int y)
+    {
+        if (isPainting)
+        {
+            PaintTile(x, y);
+        }
+    }
+
+    public class Tile
+    {
+        [JsonPropertyName("x")]
+        public int PosX { get; set; }
+    
+        [JsonPropertyName("y")]
+        public int PosY { get; set; }
+    
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+
+        public Tile(int x, int y, string type)
+        {
+            PosX = x;
+            PosY = y;
+            Type = type;
+        }
+    }
+
+    public class MapTotal
+    {
+        [JsonPropertyName("map_width")]
+        public int MapWidth { get; set; }
+    
+        [JsonPropertyName("map_height")]
+        public int MapHeight { get; set; }
+    
+        [JsonPropertyName("tiles")]
+        public List<Tile> Tiles { get; set; }
+
+        public MapTotal(int width, int height)
+        {
+            MapWidth = width;
+            MapHeight = height;
+            Tiles = CreateTiles();
+        }
+
+        private List<Tile> CreateTiles()
+        {
+            var tiles = new List<Tile>();
+            for (int x = 0; x < MapWidth; x++)
+            {
+                for (int y = 0; y < MapHeight; y++)
+                {
+                    tiles.Add(new Tile(x, y, "void"));
+                }
+            }
+
+            return tiles;
+        }
+    }
+
+    private async Task<(bool isValid, string? errorMessage)> VerifMap()
+    {
+        if (mapData == null) return(false, "La carte est vide...");
+        int spawn = 0;
+        for (int i = 0; i < mapData.Tiles.Count; i++)
+        {
+            if (mapData.Tiles[i].Type == "spawn")
+            {
+                spawn += 1;
+            }
+        }
+
+        if (spawn < 2)
+        {
+            return (false, "La carte doit contenir au moins 4 cases de spawn pour être valide.");
+        }
+        return (true, null);
+    }
+
+    private async Task CopyMapAsync()
+    {
+        var (isValid, validationMessage) = await VerifMap();
+        if (!isValid)
+        {
+            errorMessage = validationMessage;
+            return;
+        }    
+        
+        errorMessage = null;
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        string jsonString = JsonSerializer.Serialize(mapData, options);
+    
+        // Copy to clipboard using JS interop
+        await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", jsonString);
+    }
+    
+    private async Task DownloadMapAsync()
+    {
+        var (isValid, validationMessage) = await VerifMap();
+        if (!isValid)
+        {
+            errorMessage = validationMessage;
+            return;
+        }
+        errorMessage = null;
+        
+        // Update property names to match Map.razor model
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = null // Use property names as defined in attributes
+        };
+
+        string jsonString = JsonSerializer.Serialize(mapData, options);
+        string fileName = $"map_{mapData.MapWidth}x{mapData.MapHeight}.json";
+
+        // Fix: Put JavaScript on one line to avoid unescaped line break error
+        await JsRuntime.InvokeVoidAsync("eval", 
+            "function downloadMapFile(fileName, content) { const blob = new Blob([content], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } downloadMapFile('" 
+            + fileName.Replace("'", "\\'") + "', '" 
+            + jsonString.Replace("'", "\\'").Replace("\r", "\\r").Replace("\n", "\\n") + "')");
+    }    
+}

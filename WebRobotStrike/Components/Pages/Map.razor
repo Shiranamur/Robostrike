@@ -1,0 +1,585 @@
+@page "/map"
+@rendermode InteractiveServer
+@using BlazorApp1.Class
+@using System.Text.Json
+@using System.IO
+
+<h3>Map</h3>
+<!--Upload map info-->
+<div class="card-body">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <h5>Upload JSON File</h5>
+            <div class="input-group">
+                <InputFile OnChange="HandleFileSelection" accept=".json" class="form-control" />
+                <button type="button" class="btn btn-primary" @onclick="ProcessSelectedFile" disabled="@(_selectedFile == null)">Upload</button>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <h5>Paste JSON Data 10*10 maximum size</h5>
+            <div class="input-group">
+                <textarea @bind="_mapJsonText" class="form-control" placeholder="Paste map JSON here" rows="1"></textarea>
+                <button type="button" class="btn btn-primary" @onclick="ParseMapFromText">Load</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger mt-3">
+        @_errorMessage
+    </div>
+}
+else if (_mapTotal != null)
+{
+    <!--Above map box-->
+    <div class="map-controls mb-3">
+        <!--Zoom in and out-->
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" @onclick="ZoomOut"><i class="bi bi-zoom-out"></i></button>
+            <button class="btn btn-outline-secondary">Zoom: @_tileSize px</button>
+            <button class="btn btn-outline-secondary" @onclick="ZoomIn"><i class="bi bi-zoom-in"></i></button>
+        </div>
+
+        <!-- show grid coordinates e.g case : 1,4-->
+        <div class="form-check form-switch ms-3">
+            <input class="form-check-input" type="checkbox" id="showCoordinates" @bind="_showCoordinates">
+            <label class="form-check-label" for="showCoordinates">Afficher les coordonnées</label>
+        </div>
+    </div>
+    
+    <!--Map outermost box allows overflow-->
+    <div class="map-outer-container">
+        <!--Map inner container =-->
+        <div class="map-container p-2 border rounded" style="--tile-size: @(_tileSize)px">
+            
+            <!--Allows to show X cordiantes on the map border-->
+            @if (_showCoordinates)
+            {
+                <div class="coordinates-x" style="grid-template-columns: repeat(@_mapTotal.MapWidth, @(_tileSize)px);">
+                    @for (int x = 0; x < _mapTotal.MapWidth; x++)
+                    {
+                        <div class="coordinate">@x</div>
+                    }
+                </div>
+            }
+            
+            <!--Allows to show Y cordiantes on the map border-->
+            <div class="grid-container">
+                @if (_showCoordinates)
+                {
+                    <div class="coordinates-y" style="grid-template-rows: repeat(@_mapTotal.MapHeight, @(_tileSize)px);">
+                        @for (int y = 0; y < _mapTotal.MapHeight; y++)
+                        {
+                            <div class="coordinate">@y</div>
+                        }
+                    </div>
+                }
+                
+                <!--inside grid for tiles-->
+                <div class="tile-grid" style="grid-template-columns: repeat(@_mapTotal.MapWidth, @(_tileSize)px);
+                grid-template-rows: repeat(@_mapTotal.MapHeight, @(_tileSize)px);">
+                    @for (int y = 0; y < _mapTotal.MapHeight; y++)
+                    {
+                        @for (int x = 0; x < _mapTotal.MapWidth; x++)
+                        {
+                            var tile = _mapTotal.Tiles?.FirstOrDefault(t => t.PosX == x && t.PosY == y);
+                            if (tile != null)
+                            {
+                               <!--Allows nice animation on the tiles--> 
+                               <div class="tile-wrapper" data-x="@x" data-y="@y" @onclick="() => ShowTileDetails(tile)" 
+                                     style="width: @(_tileSize)px; height: @(_tileSize)px;"> <!--Little box popup to show details about the tile on click like position and type-->
+                                   <img src="@GetTileImagePath(tile.Type)"
+                                        class="tile"
+                                        alt="@tile.Type"
+                                        title="X: @tile.PosX, Y: @tile.PosY, Type: @tile.Type"
+                                        loading="lazy"/>
+                                   
+                                   <!-- we look on each tile if a player is present or should be and then show it on the said tile-->
+                                   @foreach (var player in _players.Where(p => p.X == x && p.Y == y))
+                                    {
+                                        <div class="player"
+                                             @onclick:stopPropagation="true"
+                                             @onclick='() => SelectPlayer(player)'> <!-- to move the player we use the select player function -->
+                                            <img class="@player.DirectionCssClass" src="@player.Sprite" alt="Player sprite"/>
+                                        </div>
+                                    }
+                                   
+                                   @foreach (var player in _players) // same but for the shots
+                                   {
+                                       @foreach (var shot in player.Shots.Where(s => s.X == x && s.Y == y))
+                                       {
+                                           <div class="player-shot">
+                                               <img class="@shot.DirectionCssClass" src="@shot.Sprite" alt="player shot sprite"/>
+                                            </div>
+                                       }
+                                   }                  
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (_selectedTile != null)
+        {
+            <!--Forementionned popup details of a tile-->
+            <div class="tile-details card my-3 pb-1">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Détails de la tuile</span>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => _selectedTile = null"></button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <img src="@GetTileImagePath(_selectedTile.Type)" class="img-fluid" alt="@_selectedTile.Type"/>
+                        </div>
+                        <div class="col-8">
+                            <p><strong>Position:</strong> X: @_selectedTile.PosX, Y: @_selectedTile.PosY</p>
+                            <p><strong>Type:</strong> @_selectedTile.Type</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    
+    @if (_selectedPlayer != null)
+    {
+        <!--Same visuals as the one above but this one allows to move the player-->
+        <div class="card my-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Contrôles du joueur @_selectedPlayer.Name</span>
+                <button type="button" class="btn-close" aria-label="Close" @onclick="() => _selectedPlayer = null"></button>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-center mb-2">
+                    <!--Rotation Left-->
+                    <button class="btn btn-outline-primary" @onclick="RotateLeft">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(180)"
+                             style="display: block; overflow: visible">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M14.2929 4.29289C14.4804 4.10536 14.7348 4 15 4C15.2652 4 15.5196 4.10536 15.7071 4.29289L21.7071 10.2929C22.0976 10.6834 22.0976 11.3166 21.7071 11.7071C21.3166 12.0976 20.6834 12.0976 20.2929 11.7071L16 7.41421V12C16 15.3137 13.3137 18 10 18H3C2.44772 18 2 17.5523 2 17C2 16.4477 2.44772 16 3 16H10C12.2091 16 14 14.2091 14 12V7.41421L9.70711 11.7071C9.31658 12.0976 8.68342 12.0976 8.29289 11.7071C7.90237 11.3166 7.90237 10.6834 8.29289 10.2929L14.2929 4.29289Z"
+                                  fill="currentColor"/>
+                        </svg>
+                    </button>
+                    
+                    <!--Up-->
+                    <button class="btn btn-outline-primary" @onclick="MoveForward">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                             style="display: block; overflow: visible;">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
+                                  fill="currentColor"/>
+                        </svg>
+                    </button>
+
+                    <!--Rotation Right-->
+                    <button class="btn btn-outline-primary" @onclick="RotateRight">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="matrix(-1, 0, 0, 1, 0, 0) rotate(180)"
+                             style="display: block; overflow: visible;">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                  d="M14.2929 4.29289C14.4804 4.10536 14.7348 4 15 4C15.2652 4 15.5196 4.10536 15.7071 4.29289L21.7071 10.2929C22.0976 10.6834 22.0976 11.3166 21.7071 11.7071C21.3166 12.0976 20.6834 12.0976 20.2929 11.7071L16 7.41421V12C16 15.3137 13.3137 18 10 18H3C2.44772 18 2 17.5523 2 17C2 16.4477 2.44772 16 3 16H10C12.2091 16 14 14.2091 14 12V7.41421L9.70711 11.7071C9.31658 12.0976 8.68342 12.0976 8.29289 11.7071C7.90237 11.3166 7.90237 10.6834 8.29289 10.2929L14.2929 4.29289Z"
+                                  fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+            <!--Down-->
+            <div class="d-flex justify-content-center mt-2">
+                <button class="btn btn-outline-primary" @onclick="MoveBackward">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(180)"
+                         style="display: block; overflow: visible;">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                              d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z"
+                              fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div>
+                <button class="btn btn-outline-primary" @onclick="PlayerShot">
+                    yep shooting here
+                </button>
+            </div>
+        </div>
+    }
+}
+
+<style>
+    /*Do i really need to comment this ?... i don't wanna*/
+    .map-outer-container {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .map-container {
+        --tile-size: 50px;
+        width: fit-content;
+    }
+    
+    .grid-container {
+        display: flex;
+    }
+    
+    .tile-grid {
+        display: grid;
+        gap: 1px;
+    }
+    
+    .tile {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .tile-wrapper {
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    
+    .tile-wrapper:hover {
+        transform: scale(1.05);
+        z-index: 10;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    
+    .coordinates-x {
+        display: grid;
+        gap: 1px;
+        padding-left: 20px;
+        margin-bottom: 4px;
+    }
+    
+    .coordinates-y {
+        display: grid;
+        gap: 1px;
+        margin-right: 4px;
+        width: 20px;
+    }
+    
+    .coordinate {
+        text-align: center;
+        font-size: 0.7rem;
+        color: var(--bs-secondary);
+    }
+
+    .player {
+        position: absolute;
+        width: 80%;
+        height: 80%;
+        border-radius: 50%;
+        top: 10%;
+        left: 10%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        z-index: 5;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+    
+    .player-shot {
+        position: absolute;
+        width: 50%;
+        height: 50%;
+        top: 10%;
+        left: 10%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        z-index: 10;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+
+    .player:hover {
+        transform: scale(1.1);
+    }
+
+    .player img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 50%;
+    }
+    
+    .rotation_up {
+        rotate: 0;
+    }
+    
+    .rotation_left {
+        rotate: -90deg
+    }
+    
+    .rotation_right {
+        rotate: 90deg
+    }
+    
+    .rotation_down {
+        rotate: 180deg
+    }
+</style>
+
+@code {
+
+    // variables utilisées entre le html et le code
+    private BlazorApp1.Class.Map? _mapTotal;
+    private IBrowserFile? _selectedFile;
+    private string _mapJsonText = "";
+    private string? _errorMessage;
+
+    // variables pour modifier le comportement de l'affiachage
+    private int _tileSize = 50;
+    private bool _showCoordinates;
+    private Tile? _selectedTile;
+
+    // players logic
+    private List<Player> _players = new();
+    private Player? _selectedPlayer;
+    private List<(int X, int Y)> _spawnPoints = new();
+
+    // surper of jsonSerial to customise output format
+    private JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true,
+        AllowTrailingCommas = true
+    };
+
+    // gets the file selection to the code of the page
+    public void HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _errorMessage = null;
+        Console.WriteLine($"File selected: {_selectedFile.Name}");
+    }
+
+    // fonctions visuelles de la carte
+    private void ZoomIn()
+    {
+        _tileSize = Math.Min(100, _tileSize + 10);
+    }
+
+    private void ZoomOut()
+    {
+        _tileSize = Math.Max(20, _tileSize - 10);
+    }
+
+    private void ShowTileDetails(Tile tile)
+    {
+        _selectedTile = tile;
+    }
+
+    // for imported files
+    public async Task ProcessSelectedFile()
+    {
+        if (_selectedFile == null) return;
+
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            Console.WriteLine($"Processing file: {_selectedFile.Name}");
+            // opens the file 1Mb limit
+            using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
+            using var memoryStream = new MemoryStream();
+            // copy the content into a memory stream, simply said it just copies the data into memory
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            // reading the json
+            using var reader = new StreamReader(memoryStream);
+            var json = await reader.ReadToEndAsync();
+
+            // sneak a peek...
+            Console.WriteLine($"JSON content: {json.Substring(0, Math.Min(100, json.Length))}...");
+
+            // deserialize to use the data
+            _mapTotal = JsonSerializer.Deserialize<BlazorApp1.Class.Map>(json, _jsonOptions);
+
+            if (_mapTotal == null)
+            {
+                _errorMessage = "Failed to parse JSON: Invalid format";
+                Console.WriteLine("Map deserialized to null");
+            }
+            else
+            {
+                // sneek another peek... this time formated
+                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
+
+                // after successful loading we check spawn points and initialise players
+                FindSpawnPoints();
+                InitializePlayers();
+                Console.WriteLine($"Spawn points found: {_spawnPoints.Count}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"Error loading map: {ex}");
+            _mapTotal = null;
+        }
+        finally
+        {
+            // reload interface to show new map, and remove the file from the memory since it's been treated
+            _selectedFile = null;
+            StateHasChanged();
+        }
+    }
+
+    // for pasted map content is limited to 10*10 for unknown reasons, surely because of text size but this is speculation
+    public void ParseMapFromText()
+    {
+        if (string.IsNullOrWhiteSpace(_mapJsonText)) return;
+
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // same as above but with less steps, yes they could be combined but hey...
+            Console.WriteLine($"Parsing JSON text: {_mapJsonText.Substring(0, Math.Min(100, _mapJsonText.Length))}...");
+            _mapTotal = JsonSerializer.Deserialize<BlazorApp1.Class.Map>(_mapJsonText, _jsonOptions);
+
+            if (_mapTotal == null)
+            {
+                _errorMessage = "Failed to parse JSON: Invalid format";
+                Console.WriteLine("Map deserialized to null");
+            }
+            else
+            {
+                Console.WriteLine($"Map loaded: {_mapTotal.MapWidth}x{_mapTotal.MapHeight}, {_mapTotal.Tiles.Count} tiles");
+
+                // Après le succès du chargement
+                FindSpawnPoints();
+                InitializePlayers();
+                Console.WriteLine($"Spawn points found: {_spawnPoints.Count}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine($"Error parsing JSON: {ex}");
+            _mapTotal = null;
+        }
+        finally
+        {
+            Console.Write("What is happening ?");
+            StateHasChanged();
+        }
+    }
+
+    // helper function to get the image of every tile 
+    private string GetTileImagePath(string tileType)
+    {
+        return $"images/Tiles/{tileType.ToLowerInvariant()}.png";
+    }
+
+    // needs to check every tile
+    private void FindSpawnPoints()
+    {
+        _spawnPoints.Clear();
+        if (_mapTotal?.Tiles != null)
+        {
+            foreach (var tile in _mapTotal.Tiles)
+            {
+                if (tile.Type == "spawn")
+                {
+                    _spawnPoints.Add((tile.PosX, tile.PosY));
+                }
+            }
+        }
+    }
+
+    // spawns players on found spawn points
+    private void InitializePlayers()
+    {
+        _players.Clear();
+
+        {
+            foreach (var spawnPoint in _spawnPoints)
+            {
+                // limit to one for test reasons
+                if (_players.Count >= 1)
+                {
+                    return;
+                }
+                // todo : change this placeholder number
+                int placeholder = 1; 
+                // here we count a new player in the game
+                _players.Add(new Player(placeholder, spawnPoint.X, spawnPoint.Y, "Player1", _mapTotal));
+            }
+        }
+    }
+
+    // simple function to selection a player and update which player is affected by the movements, only one is spawned at the time of this comment
+    private void SelectPlayer(Player player)
+    {
+        _selectedPlayer = player;
+    }
+
+
+    // Update movement methods to trigger shot movement
+    private void MoveForward()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.MoveForward(true);
+            _selectedPlayer.MoveShots();
+            StateHasChanged();
+        }
+    }
+
+    private void MoveBackward()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.MoveForward(false);
+            _selectedPlayer.MoveShots();
+            StateHasChanged();
+        }
+    }
+
+    private void RotateRight()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.RotateRight(true);
+            _selectedPlayer.MoveShots();
+            StateHasChanged();
+        }
+    }
+
+    private void RotateLeft()
+    {
+        if (_selectedPlayer != null)
+        {
+            _selectedPlayer.RotateRight(false);
+            _selectedPlayer.MoveShots();
+            StateHasChanged();
+        }
+    }
+
+    private void PlayerShot()
+    {
+        if (_selectedPlayer != null)
+        {
+            var shot = new Shot(_selectedPlayer.X, _selectedPlayer.Y, _selectedPlayer, _mapTotal);
+            _selectedPlayer.Shots.Add(shot);
+            Console.WriteLine($"Shot added here onto player id :{_selectedPlayer.Id}");
+            Console.WriteLine($"Player shots count{_selectedPlayer.Shots.Count}");
+            _selectedPlayer.MoveShots();
+            StateHasChanged();
+        }
+    }
+}
