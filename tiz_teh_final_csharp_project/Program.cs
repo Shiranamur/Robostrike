@@ -1,26 +1,28 @@
-﻿using System;
-using System.IO;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using tiz_teh_final_csharp_project.Extensions;
 
-namespace tiz_teh_final_csharp_project;
+var builder = WebApplication.CreateBuilder(args);
 
-public class Program
+// Add services to the container.
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
 {
-    static void Main(string[] args)
-    {
-        string mapFilePath = "../../../Map/map_test.json";
-        string currentDir = Directory.GetCurrentDirectory();
-        string fullMapFilePath = Path.GetFullPath(mapFilePath);
-
-        Console.WriteLine(currentDir, fullMapFilePath);
-        List<Player> players = new List<Player>
-        {
-            new Player { id = 1, x = 0, y = 0, direction = 'S', inputs = " "},
-            new Player { id = 2, x = 2, y = 0, direction = 'N', inputs = " "}
-        };
-        
-        Game game = new Game(mapFilePath, players);
-        
-        game.StartGame();
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
+
+// Dynamically add all endpoint mappings
+app.MapEndpoints();
+
+await app.RunAsync();
