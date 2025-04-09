@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using tiz_teh_final_csharp_project.Endpoints;
 using tiz_teh_final_csharp_project.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Register the middleware
+builder.Services.AddTransient<Middleware>();
+
 
 var app = builder.Build();
 
@@ -26,6 +31,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Dynamically add all endpoint mappings
-app.MapEndpoints();
+app.Endpoints();
 
 await app.RunAsync();
