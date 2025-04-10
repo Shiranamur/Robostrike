@@ -25,7 +25,7 @@ if(string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("Connection string 'MariaDBConnection' not found.");
 }*/
-builder.Services.AddTransient<IUserRepository>(provider => new UserRepository("Server=localhost;Port=3306;Database=robotstrike;User=root;Password=root;"));
+builder.Services.AddTransient<IUserRepository>(provider => new UserRepository("Server=localhost;Port=3306;Database=robostrike;User=root;Password=;"));
 
 
 var app = builder.Build();

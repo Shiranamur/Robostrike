@@ -58,3 +58,33 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/*css map*/
+#map {
+    display: grid;
+    grid-template-columns: repeat(10, 48px);
+    grid-template-rows: repeat(10, 48px);
+    gap: 0;
+    position: relative;
+}
+/*css cellule*/
+.cell {
+    width: 48px;
+    height: 48px;
+    background-size: cover;
+    background-position: center;
+}
+/*css joueur*/
+#player {
+    width: 48px;
+    height: 48px;
+    background-image: url('../wwwroot/images/Sprites/player1.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: absolute;
+    transition: top 0.2s, left 0.2s;
+    z-index: 10;
+}
+  
+  

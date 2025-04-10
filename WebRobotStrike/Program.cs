@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Ajout UsersSerice
 builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<SessionService>();
-
+builder.Services.AddHttpClient();
 
 // bdd
 builder.Services.AddDbContext<RobostrikeContext>(options =>
@@ -30,7 +30,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
-
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 app.MapStaticAssets();

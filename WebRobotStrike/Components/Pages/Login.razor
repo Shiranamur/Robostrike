@@ -52,6 +52,6 @@
         var token = await SessionService.CreateSessionTokenAsync(user.Id);
         await JS.InvokeVoidAsync("localStore.set", "sessionToken", token);
         
-        Navigation.NavigateTo("/logged");
+        Navigation.NavigateTo("/hub");
     }
 }

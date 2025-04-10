@@ -1,0 +1,99 @@
+﻿@page "/hub"
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Hub de jeu</h3>
+
+<div class="hub-controls">
+    <button @onclick="JoinMatchmaking" disabled="@(_jsInitialized ? null : true)">Rejoindre le matchmaking</button>
+    <button @onclick="LeaveMatchmaking" disabled="@(_jsInitialized ? null : true)">Quitter le matchmaking</button>
+</div>
+
+<div class="hub-status">
+    <p>@_statusMessage</p>
+</div>
+
+<div id="gameContainer" style="width:480px; height:480px; border:1px solid #ccc;"></div>
+
+@code {
+    private string _statusMessage = "Bienvenue sur le hub de jeu.";
+    private string _sessionToken = string.Empty;
+    private bool _jsInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Appeler la fonction JS pour récupérer le token de session
+            _sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
+            if (string.IsNullOrWhiteSpace(_sessionToken))
+            {
+                // Rediriger vers la page de login si aucun token n'est trouvé.
+                //Navigation.NavigateTo("/login");
+                Console.WriteLine("bite");
+            }
+            else
+            {
+                _statusMessage = "Token récupéré avec succès.";
+            }
+            _jsInitialized = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task JoinMatchmaking()
+    {
+        try
+        {
+            // Vérifier que le token a bien été récupéré
+            if (!_jsInitialized || string.IsNullOrWhiteSpace(_sessionToken))
+            {
+                _statusMessage = "Token de session introuvable.";
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _sessionToken);
+
+            var response = await Http.GetAsync("http://localhost:5181/api/matchmaking/join");
+            if (response.IsSuccessStatusCode)
+            {
+                _statusMessage = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("initializeGameCanvas", "gameContainer");
+            }
+            else
+            {
+                _statusMessage = $"Erreur: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private async Task LeaveMatchmaking()
+    {
+        try
+        {
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _sessionToken);
+            var response = await Http.GetAsync("http://localhost:5181/api/matchmaking/leave");
+            if (response.IsSuccessStatusCode)
+            {
+                _statusMessage = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                _statusMessage = $"Erreur: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+}
