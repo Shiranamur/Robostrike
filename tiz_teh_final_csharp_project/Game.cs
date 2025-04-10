@@ -130,7 +130,7 @@ namespace tiz_teh_final_csharp_project
 
         /// <summary>
         /// Soumet une entrée de joueur pour un round donné.
-        /// Appelée avec SubmitPlayerInput(int roundNumber, int playerId, char input) et retourne void.
+        /// Appelée avec SubmitPlayerInput(int playerId, char input) et retourne void.
         /// Elle enregistre l'input du joueur et, si tous les inputs sont reçus, déclenche la complétion de la tâche d'attente.
         /// est trigger par : POST /api/game/{matchId}/round
         /// </summary>

@@ -6,7 +6,20 @@ public class MapHelper
 
     public MapHelper()
     {
-        _mapDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Map");
+        // Get the current executing assembly path (bin/Debug/net9.0)
+        string binDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+        // Try to get directory from configuration, or use fallback paths
+        _mapDirectory = Path.GetFullPath(Path.Combine(binDirectory, "../../../Map"));
+
+        Console.WriteLine($"[Debug] Map directory path: {_mapDirectory}");
+    
+        // Ensure directory exists
+        if (!Directory.Exists(_mapDirectory))
+        {
+            Directory.CreateDirectory(_mapDirectory);
+            Console.WriteLine($"[Debug] Created map directory: {_mapDirectory}");
+        }
     }
 
     public string PickRandomMap()

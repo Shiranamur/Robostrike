@@ -30,6 +30,10 @@ builder.Services.AddTransient<IUserRepository>(provider => new UserRepository("S
 
 var app = builder.Build();
 
+
+// Force instantiation of GameManager so it can subscribe to events of QueueManager
+app.Services.GetRequiredService<GameManager>();
+
 // show environment type
 Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 
