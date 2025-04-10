@@ -80,6 +80,7 @@ namespace tiz_teh_final_csharp_project
             Console.WriteLine($"Game: Initialized with {Players.Count} players.");
         }
 
+
         /// <summary>
         /// Initialise les joueurs en leur assignant une position de départ, une direction par défaut et des inputs par défaut.
         /// Méthode de test qui répartit les joueurs en grille sur la carte.
@@ -277,6 +278,42 @@ namespace tiz_teh_final_csharp_project
             else
             {
                 Console.WriteLine("Invalid input");
+            }
+            
+        }
+        public void GameLoop()
+        {
+            map.printMap(Players);
+            foreach (var player in Players)
+            {
+                player.xA = player.x;
+                player.yA = player.y;
+                if (player == null)
+                {
+                    Console.WriteLine("Game: A player in the list is null.");
+                    continue;
+                }
+                player.inputs = player.EnterInput(player);
+            }
+            for (int j = 0; j < 6; j++)
+            {
+                foreach (var player in Players)
+                {
+                    ReadInput(player, player.inputs[j], map);
+                }
+                foreach(var qPlayer in Players)
+                {
+                    foreach(var wPlayer in Players)
+                    {
+                        if (wPlayer.x == qPlayer.x && wPlayer.y == qPlayer.y && wPlayer.id != qPlayer.id)
+                        {
+                            qPlayer.HandleCollision(wPlayer,qPlayer, map, Players);
+                        }
+                    }
+                }
+                map.printMap(Players);
+                Console.WriteLine("enter anything to continue");
+                Console.ReadLine();
             }
         }
     }

@@ -32,18 +32,22 @@ namespace tiz_teh_final_csharp_project
             pushDirection = direction;
             if (direction == 'N')
             {
+                pushDirection = direction;
                 newY += -1;
             }
             else if (direction == 'S')
             {
+                pushDirection = direction;
                 newY += 1;
             }
             else if (direction == 'E')
             {
+                pushDirection = direction;
                 newX += 1;
             }
             else if (direction == 'W')
             {
+                pushDirection = direction;
                 newX += -1;
             }
             else
@@ -181,76 +185,202 @@ namespace tiz_teh_final_csharp_project
             return (Console.ReadLine());
 
         }
+        //checks number of players at given coordinates
+        public int CheckTile(int x, int y, List<Player> Players)
+        {
+            int i = 0;
+            foreach(var player in Players)
+            {
+                if (player.x == x && player.y == y)
+                {
+                    i += 1;
+                }
+            }
+            return i;
+        }
 
-
-        public void HandleCollision(Player player1, Player player2, Map carte)
+        public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
         {
             if (player1.push > player2.push && player2.push == 0)
             {
                 if (player1.pushDirection == 'N')
                 {
+                    player2.push = 1;
+                    player2.pushDirection = 'N';
                     bool isValid = carte.isValidMove(player2.x, player2.y - 1);
-                    if (isValid)
+                    if (isValid && CheckTile(player2.x, player2.y - 1, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach(var player in players)
+                        {
+                            if (player2.x == player.x && player2.y - 1 == player.y)
+                            {
+                                player.yA = player.y;
+                                player2.yA = player2.y;
+                                player2.y += -1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.y = player1.yA;
+                                    player2.y = player2.yA;
+                                    player.y = player.yA;
+                                    
+                                    return 0;                                 
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.x, player2.y - 1, players) == 0)
                     {
                         player2.y += -1;
+                        return 1;
                     }
                     else
                     {
-                        player1.x = player1.xA;
                         player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 else if (player1.pushDirection == 'E')
                 {
+                    player2.push = 1;
+                    player2.pushDirection = 'E';
                     bool isValid = carte.isValidMove(player2.x + 1, player2.y);
-                    Console.WriteLine(isValid);
-                    if (isValid)
+                    if (isValid && CheckTile(player2.x + 1, player2.y, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach(var player in players)
+                        {
+                            if (player2.x + 1 == player.x && player2.y == player.y)
+                            {
+                                player.xA = player.x;
+                                player2.xA = player2.x;
+                                player2.x += 1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.x = player1.xA;
+                                    player2.x = player2.xA;
+                                    player.x = player.xA;
+                                    
+                                    return 0;                                 
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.x + 1, player2.y, players) == 0)
                     {
                         player2.x += 1;
+                        return 1;
                     }
                     else
                     {
                         player1.x = player1.xA;
-                        player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 else if (player1.pushDirection == 'W')
                 {
+                    player2.push = 1;
+                    player2.pushDirection = 'W';
                     bool isValid = carte.isValidMove(player2.x - 1, player2.y);
-                    if (isValid)
+                    if (isValid && CheckTile(player2.x - 1, player2.y, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach(var player in players)
+                        {
+                            if (player2.x - 1 == player.x && player2.y == player.y)
+                            {
+                                player.xA = player.x;
+                                player2.xA = player2.x;
+                                player2.x += -1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.x = player1.xA;
+                                    player2.x = player2.xA;
+                                    player.x = player.xA;
+                                    
+                                    return 0;                                 
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.x - 1, player2.y, players) == 0)
                     {
                         player2.x += -1;
+                        return 1;
                     }
                     else
                     {
                         player1.x = player1.xA;
-                        player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 else if (player1.pushDirection == 'S')
                 {
+                    player2.push = 1;
+                    player2.pushDirection = 'S';
                     bool isValid = carte.isValidMove(player2.x, player2.y + 1);
-                    if (isValid)
+                    if (isValid && CheckTile(player2.x, player2.y + 1, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach(var player in players)
+                        {
+                            if (player2.x == player.x && player2.y + 1 == player.y)
+                            {
+                                player.yA = player.y;
+                                player2.yA = player2.y;
+                                player2.y += 1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.y = player1.yA;
+                                    player2.y = player2.yA;
+                                    player.y = player.yA;
+                                    
+                                    return 0;                                 
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.x, player2.y + 1, players) == 0)
                     {
                         player2.y += 1;
+                        return 1;
                     }
                     else
                     {
-                        player1.x = player1.xA;
                         player1.y = player1.yA;
+                        return 0;
                     }
                 }
-                Console.WriteLine("Pushed once");
-
+                else if (player1.push == player2.push)
+                {
+                    player1.x = player1.xA;
+                    player1.y = player1.yA;
+                    player2.x = player2.xA;
+                    player2.y = player2.yA;
+                    return 0;
+                }
             }
-            else if (player1.push == player2.push)
-            {
-
-                player1.x = player1.xA;
-                player1.y = player1.yA;
-                player2.x = player2.xA;
-                player2.y = player2.yA;
-            }
+            return -1;
         }
     }
 }
