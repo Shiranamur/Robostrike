@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>RobotStrick</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="main-container">
+    
+    <!-- MAP + CONTRÔLES -->
+    <div id="left-section">
+      <div id="map"></div>
+
+      <!-- contrôles de déplacement -->
+      <div id="controls">
+        <button onclick="queueAction('haut')">↑</button>
+        <button onclick="queueAction('bas')">↓</button>
+        <button onclick="queueAction('gauche')">←</button>
+        <button onclick="queueAction('droite')">→</button>
+      </div>
+    </div>
+
+    <!-- PANNEAU ACTIONS -->
+    <div id="action-queue">
+      <h3>Actions</h3>
+      <ul id="actionList"></ul>
+      <button onclick="executeActions()" id="btnP">✅ Prêt</button>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
