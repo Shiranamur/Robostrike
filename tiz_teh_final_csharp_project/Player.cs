@@ -26,18 +26,22 @@ namespace tiz_teh_final_csharp_project
             }
             if (direction == 'N')
             {
+                pushDirection = direction;
                 newY += -1;
             }
             else if (direction == 'S')
             {
+                pushDirection = direction;
                 newY += 1;
             }
             else if (direction == 'E')
             {
+                pushDirection = direction;
                 newX += 1;
             }
             else if (direction == 'W')
             {
+                pushDirection = direction;
                 newX += -1;
             }
             else
@@ -199,8 +203,19 @@ namespace tiz_teh_final_csharp_project
             }
             
         }
-
-        public void HandleCollision(Player player1, Player player2, Map carte)
+        public int CheckTile(int x, int y, List<Player> Players)
+        {
+            int i = 0;
+            foreach(var player in Players)
+            {
+                if (player.x == x && player.y == y)
+                {
+                    i += 1;
+                }
+            }
+            return i;
+        }
+        public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
         {
             if (player1.push > player2.push && player2.push == 0)
             {
@@ -210,50 +225,89 @@ namespace tiz_teh_final_csharp_project
                     if (isValid)
                     {
                         player2.y += -1;
+                        return 1;
                     }
                     else
                     {
                         player1.x = player1.xA;
                         player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 else if (player1.pushDirection == 'E')
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
-                    if (isValid)
+                    player2.push = 1;
+                    player2.pushDirection = 'E';
+                    bool isValid = carte.isValidMove(player2.x + 1, player2.y);
+                    if (isValid && CheckTile(player2.x + 1, player2.y, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach(var player in players)
+                        {
+
+                            if (player2.x + 1 == player.x && player2.y == player.y)
+                            {
+                                player.xA = player.x;
+                                player.yA = player.y;
+                                player2.x += 1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.x = player1.xA;
+                                    player1.y = player1.yA;
+                                    player2.x = player2.xA;
+                                    player2.y = player2.yA;
+                                    player.x = player.xA;
+                                    player.y = player.yA;
+                                    return 0;                                 
+                                }
+
+                            }
+                        }
+                    }
+                    else if (isValid)
                     {
                         player2.x += 1;
+                        return 1;
                     }
                     else
                     {
                         player1.x = player1.xA;
                         player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 else if (player1.pushDirection == 'W')
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    bool isValid = carte.isValidMove(player2.x - 1, player2.y);
                     if (isValid)
                     {
                         player2.x += -1;
+                        return 1;
                     }
                     else
                     {
                         player1.x = player1.xA;
                         player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 else if (player1.pushDirection == 'S')
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
+                    bool isValid = carte.isValidMove(player2.x, player2.y + 1);
                     if (isValid)
                     {
                         player2.y += 1;
+                        return 1;
                     }
                     else
                     {
                         player1.x = player1.xA;
                         player1.y = player1.yA;
+                        return 0;
                     }
                 }
                 Console.WriteLine("Pushed once");
@@ -266,7 +320,9 @@ namespace tiz_teh_final_csharp_project
                 player1.y = player1.yA;
                 player2.x = player2.xA;
                 player2.y = player2.yA;
+                return 0;
             }
+            return -1;
         }
     }
 
