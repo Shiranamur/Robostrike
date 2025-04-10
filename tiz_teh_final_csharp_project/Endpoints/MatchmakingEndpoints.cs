@@ -60,13 +60,13 @@ public class MatchmakingEndpoints : IEndpointMapper
         .WithOpenApi(ConfigureOpenApiOperation);
 
         
-        app.MapGet("api/matchmaking/status", async (HttpRequest request, QueueManager queueManager) =>
+        app.MapGet("api/matchmaking/status", async (HttpRequest request, QueueManager queueManager, GameManager gameManager) =>
         {
             var context = request.HttpContext;
 
             // user has valid id and is queued for matchmaking
             if (context.Items.TryGetValue("UserId", out var userIdObj) && userIdObj is string userIdStr &&
-                int.TryParse(userIdStr, out var userId) && queueManager.IsPlayerActive(userId))
+                int.TryParse(userIdStr, out var userId) && ( queueManager.GetQueuedPlayerIds().Contains(userId) || gameManager.IsInPendingNotifications(userId)))
             {
                 var tcs = new TaskCompletionSource<object>();
                 var cancellationToken = context.RequestAborted;
@@ -76,7 +76,7 @@ public class MatchmakingEndpoints : IEndpointMapper
 
                 // Register a callback for the specific player.
                 // When QueueManager.UpdateStatus is called, this callback triggers.
-                queueManager.OnStatusUpdate(userId, status =>
+                gameManager.OnStatusUpdate(userId, status =>
                 {
                     Console.WriteLine($"[Debug] Update callback triggered for user Matchmaking API {userId} with status: {status}");
                     tcs.TrySetResult(new { Status = status });

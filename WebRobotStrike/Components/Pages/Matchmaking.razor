@@ -36,7 +36,7 @@
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage response = await httpClient.GetAsync("http://127.0.0.1:5181/api/matchmaking/status");
             response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
+            responseBody = await response.Content.ReadAsStringAsync();
             Console.WriteLine($"Query sent at {start}, \nResponse received at {DateTime.Now},\n total time taken is : {DateTime.Now - start}");
             Console.WriteLine(responseBody);
             // Navigation.NavigateTo("/matchmaking");
