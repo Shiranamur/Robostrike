@@ -34,7 +34,7 @@ namespace tiz_teh_final_csharp_project
 
         // Stocke les inputs des joueurs pour chaque round.
         // Key: numéro de round ; Value: dictionnaire associant l'id du joueur à son caractère d'entrée.
-        private readonly ConcurrentDictionary<int, Dictionary<int, char>> _roundInputs = new();
+        private readonly ConcurrentDictionary<int, Dictionary<int, string>> _roundInputs = new();
 
         // Stocke un TaskCompletionSource pour chaque round afin d'attendre que tous les joueurs aient soumis leur input.
         private readonly ConcurrentDictionary<int, TaskCompletionSource<bool>> _roundInputCompletionSources = new();
@@ -137,10 +137,10 @@ namespace tiz_teh_final_csharp_project
         /// <param name="roundNumber">Le numéro du round en cours.</param>
         /// <param name="playerId">L'identifiant du joueur.</param>
         /// <param name="input">L'entrée saisie par le joueur.</param>
-        public void SubmitPlayerInput(int playerId, char input)
+        public void SubmitPlayerInput(int playerId, string input)
         {
             // Récupère ou crée le dictionnaire des inputs pour le round.
-            var inputs = _roundInputs.GetOrAdd(currentRound, new Dictionary<int, char>());
+            var inputs = _roundInputs.GetOrAdd(currentRound, new Dictionary<int, string>());
             lock (inputs)
             {
                 inputs[playerId] = input;
@@ -188,19 +188,27 @@ namespace tiz_teh_final_csharp_project
             }
 
             // Traite l'input de chaque joueur.
-            foreach (var player in Players)
+            // fait une boucle qui va permetre de selectionner l'input correspondant au round
+            // TODO : Verifier que cela ne casse pas la logique du jeu, je ne sais pas j'ai pas testé
+            // était nécessaire pour implémenter la logique API parce que sinon je ne sais pas comment passer un string par string... et c'est pas viable non plus
+            for (int i = 0; i < inputs.Count; i++)
             {
-                if (inputs.TryGetValue(player.id, out char input))
+                foreach (var player in Players)
                 {
-                    // Traite l'input via la fonction ReadInput.
-                    ReadInput(player, input, map);
-                    player.curInput = input;
-                }
-                else
-                {
-                    Console.WriteLine($"Player {player.id} did not submit input for round {currentRound}.");
+                    // get the string out and only select the "i" character
+                    if (inputs.TryGetValue(player.id, out string input))
+                    {
+                        // Traite l'input via la fonction ReadInput.
+                        ReadInput(player, input[i], map);
+                        player.curInput = input[i];
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Player {player.id} did not submit input for round {currentRound}.");
+                    }
                 }
             }
+
             
             // Gère les collisions entre joueurs.
             foreach (var qPlayer in Players)
