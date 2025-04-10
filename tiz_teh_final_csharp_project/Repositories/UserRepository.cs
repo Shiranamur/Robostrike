@@ -19,15 +19,15 @@ namespace tiz_teh_final_csharp_project.Repositories
             {
                 return null;
             }
-            DateTime expiresAt = DateTime.UtcNow;
-            const string query = "SELECT UserId FROM Sessions WHERE SessionId = @token and ExpiresAt = @dateTime";
+            DateTime currentTime = DateTime.UtcNow;
+            const string query = "SELECT UserId FROM Sessions WHERE SessionId = @token and ExpiresAt > @currentTime";
             
             await using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
 
             await using var command = new MySqlCommand(query, connection);
             command.Parameters.AddWithValue("@token", token);
-            command.Parameters.AddWithValue("@dateTime", expiresAt);
+            command.Parameters.AddWithValue("@currentTime", currentTime);
             
             var result = await command.ExecuteScalarAsync();
             return result?.ToString();

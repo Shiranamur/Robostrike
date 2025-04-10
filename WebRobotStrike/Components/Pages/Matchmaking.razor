@@ -1,0 +1,52 @@
+@page "/matchmaking"
+@rendermode InteractiveServer
+@inject IJSRuntime JsRuntime
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.EntityFrameworkCore.Storage.ValueConversion
+
+
+<h3>Matchmaking</h3>
+
+<h3>@responseBody</h3>
+
+@code {
+    private string responseBody = "Waiting for match find !";
+    [Inject]
+    private IJSRuntime JS { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RequestMatchmakingAsync();
+        }
+    }
+
+    private async Task RequestMatchmakingAsync()
+    {
+        using var httpClient = new HttpClient();
+        try
+        {
+            DateTime start = DateTime.Now;
+            Console.WriteLine("Requesting matchmaking status");
+            // Wrap the token in an object array
+            var token = await JS.InvokeAsync<string>("localStore.get", new object[] { "sessionToken" });
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            HttpResponseMessage response = await httpClient.GetAsync("http://127.0.0.1:5181/api/matchmaking/status");
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Query sent at {start}, \nResponse received at {DateTime.Now},\n total time taken is : {DateTime.Now - start}");
+            Console.WriteLine(responseBody);
+            // Navigation.NavigateTo("/matchmaking");
+            
+            StateHasChanged();
+
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine($"Request error: {e.Message}");
+        }
+    }
+}

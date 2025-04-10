@@ -18,22 +18,19 @@ public class Middleware
     public async Task InvokeAsync(HttpContext context)
     {
         // before the NEXT api call
-        Console.WriteLine("Before api call");
         if (context.Request.Headers.TryGetValue("Authorization", out var authHeader) &&
             authHeader.ToString().StartsWith("Bearer "))
         {
-            Console.WriteLine("Bearer found");
             string token = authHeader.ToString().Substring("Bearer ".Length).Trim();
             var userId = await _userRepository.GetUserIdByTokenAsync(token);
             if (userId != null)
             {
-                context.Items["UserId"] = userId;
+                context.Items["UserId"] = userId; 
             }
             else
             {
-                Console.WriteLine("Bearer not found");
+                Console.WriteLine("[debug] Bearer of the token not found");
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsync("Invalid token");
             }
 
 
@@ -41,7 +38,7 @@ public class Middleware
         }
         else
         {
-            Console.WriteLine("No token");
+            Console.WriteLine("[debug] No token");
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsync("Unauthorized");
         }
