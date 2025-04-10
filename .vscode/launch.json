@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+
+        {
+            "name": "C#: tiz_teh_final_csharp_project",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/tiz_teh_final_csharp_project/tiz_teh_final_csharp_project.csproj",
+            "launchConfigurationId": "TargetFramework=;tiz_teh_final_csharp_project"
+        }
+    ]
+}

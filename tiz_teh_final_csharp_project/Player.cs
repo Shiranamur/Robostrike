@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace tiz_teh_final_csharp_project
 {
@@ -8,9 +9,13 @@ namespace tiz_teh_final_csharp_project
         public int x { get; set; }
         public int y { get; set; }
         public char direction { get; set;}
+        public char curInput { get; set; }
         public string inputs { get; set;}
-        public int xA;
-        public int yA;
+        [JsonPropertyName("previousX")]
+        public int xA { get; set; }
+        [JsonPropertyName("previousY")]
+        public int yA { get; set; }
+        public int events { get; set; }
         public int push = 0;
         public char pushDirection;
 
@@ -24,6 +29,7 @@ namespace tiz_teh_final_csharp_project
                 Console.WriteLine($"Player {id}: Carte is null!");
                 return;
             }
+            pushDirection = direction;
             if (direction == 'N')
             {
                 pushDirection = direction;
@@ -179,6 +185,7 @@ namespace tiz_teh_final_csharp_project
             return (Console.ReadLine());
 
         }
+<<<<<<< HEAD
         public void ReadInput(char i, Map carte)
         {
             if (i == 'q')
@@ -216,6 +223,11 @@ namespace tiz_teh_final_csharp_project
             return i;
         }
         public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
+=======
+
+
+        public void HandleCollision(Player player1, Player player2, Map carte)
+>>>>>>> 03a7af42c9ae0a158ed4d906a6202c6de1c22f06
         {
             if (player1.push > player2.push && player2.push == 0)
             {
@@ -236,6 +248,7 @@ namespace tiz_teh_final_csharp_project
                 }
                 else if (player1.pushDirection == 'E')
                 {
+<<<<<<< HEAD
                     player2.push = 1;
                     player2.pushDirection = 'E';
                     bool isValid = carte.isValidMove(player2.x + 1, player2.y);
@@ -269,6 +282,11 @@ namespace tiz_teh_final_csharp_project
                         }
                     }
                     else if (isValid)
+=======
+                    bool isValid = carte.isValidMove(player2.x + 1, player2.y);
+                    Console.WriteLine(isValid);
+                    if (isValid)
+>>>>>>> 03a7af42c9ae0a158ed4d906a6202c6de1c22f06
                     {
                         player2.x += 1;
                         return 1;
@@ -325,5 +343,4 @@ namespace tiz_teh_final_csharp_project
             return -1;
         }
     }
-
 }
