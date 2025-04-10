@@ -98,12 +98,8 @@ namespace tiz_teh_final_csharp_project
         public void GameLoop()
         {
             map.printMap(Players);
-           // int[] playerList = new int[8];
-            int i = 1;
             foreach (var player in Players)
             {
-                player.id = i;
-                i += 1;
                 player.xA = player.x;
                 player.yA = player.y;
                 if (player == null)
@@ -112,49 +108,31 @@ namespace tiz_teh_final_csharp_project
                     continue;
                 }
                 player.inputs = player.EnterInput(player);
-            }                
-            Turn curTurn = new Turn(0, Players);
-            string test = JsonSerializer.Serialize(curTurn);
-            Console.WriteLine(test);
+            }
             for (int j = 0; j < 6; j++)
             {
-
-
                 foreach (var player in Players)
                 {
-                    player.events = 0;
                     ReadInput(player, player.inputs[j], map);
-                    player.curInput = player.inputs[j];
                 }
                 foreach(var qPlayer in Players)
                 {
                     foreach(var wPlayer in Players)
                     {
-                        if ((wPlayer.x == qPlayer.x || wPlayer.x == qPlayer.xA) && (wPlayer.y == qPlayer.y || wPlayer.y == qPlayer.yA) && wPlayer.id != qPlayer.id)
+                        if (wPlayer.x == qPlayer.x && wPlayer.y == qPlayer.y && wPlayer.id != qPlayer.id)
                         {
-<<<<<<< HEAD
                             qPlayer.HandleCollision(wPlayer,qPlayer, map, Players);
                             qPlayer.xA = qPlayer.x;
                             qPlayer.yA = qPlayer.y;
                             wPlayer.xA = wPlayer.x;
                             wPlayer.yA = wPlayer.y;
-=======
-                            qPlayer.HandleCollision(wPlayer,qPlayer, map);
-                            qPlayer.events = 1;
-                            wPlayer.events = 1;
->>>>>>> 03a7af42c9ae0a158ed4d906a6202c6de1c22f06
                         }
                     }
                 }
-                curTurn = new Turn(j, Players);        
                 map.printMap(Players);
                 Console.WriteLine("enter anything to continue");
                 Console.ReadLine();
-                test = JsonSerializer.Serialize(curTurn);
-                Console.WriteLine(test);
             }
-            
-
         }
     }
 }

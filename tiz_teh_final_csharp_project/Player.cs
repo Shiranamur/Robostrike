@@ -185,31 +185,7 @@ namespace tiz_teh_final_csharp_project
             return (Console.ReadLine());
 
         }
-<<<<<<< HEAD
-        public void ReadInput(char i, Map carte)
-        {
-            if (i == 'q')
-            {
-                    RotateLeft();
-            }
-            else if (i == 'w')
-            {
-                    MoveForward(carte);
-            }
-            else if (i == 's')
-            {
-                    MoveBackward(carte);
-            }
-            else if (i == 'e')
-            {
-                    RotateRight();
-            }
-            else
-            {
-                    Console.WriteLine("Invalid input");
-            }
-            
-        }
+        //checks number of players at given coordinates
         public int CheckTile(int x, int y, List<Player> Players)
         {
             int i = 0;
@@ -222,12 +198,8 @@ namespace tiz_teh_final_csharp_project
             }
             return i;
         }
-        public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
-=======
 
-
-        public void HandleCollision(Player player1, Player player2, Map carte)
->>>>>>> 03a7af42c9ae0a158ed4d906a6202c6de1c22f06
+    public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
         {
             if (player1.push > player2.push && player2.push == 0)
             {
@@ -248,7 +220,6 @@ namespace tiz_teh_final_csharp_project
                 }
                 else if (player1.pushDirection == 'E')
                 {
-<<<<<<< HEAD
                     player2.push = 1;
                     player2.pushDirection = 'E';
                     bool isValid = carte.isValidMove(player2.x + 1, player2.y);
@@ -282,11 +253,6 @@ namespace tiz_teh_final_csharp_project
                         }
                     }
                     else if (isValid)
-=======
-                    bool isValid = carte.isValidMove(player2.x + 1, player2.y);
-                    Console.WriteLine(isValid);
-                    if (isValid)
->>>>>>> 03a7af42c9ae0a158ed4d906a6202c6de1c22f06
                     {
                         player2.x += 1;
                         return 1;
