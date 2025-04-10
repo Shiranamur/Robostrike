@@ -122,10 +122,6 @@ namespace tiz_teh_final_csharp_project
                         if (wPlayer.x == qPlayer.x && wPlayer.y == qPlayer.y && wPlayer.id != qPlayer.id)
                         {
                             qPlayer.HandleCollision(wPlayer,qPlayer, map, Players);
-                            qPlayer.xA = qPlayer.x;
-                            qPlayer.yA = qPlayer.y;
-                            wPlayer.xA = wPlayer.x;
-                            wPlayer.yA = wPlayer.y;
                         }
                     }
                 }

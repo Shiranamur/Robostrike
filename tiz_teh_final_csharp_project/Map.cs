@@ -26,7 +26,7 @@ namespace tiz_teh_final_csharp_project
                 return false;
             }
             Console.WriteLine("x " + Width + "y " + Height + "x " + x + "y " + y);
-            bool isInBounds = x >= 0 && x <= Width && y >= 0 && y <= Height;
+            bool isInBounds = x >= 0 && x < Width && y >= 0 && y < Height;
             Console.WriteLine($"Map: Checking move to ({x}, {y}). Is within bounds? {isInBounds}");
 
             if (!isInBounds)
