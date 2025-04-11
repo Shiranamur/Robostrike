@@ -7,7 +7,6 @@
 <h3>Hub de jeu</h3>
 
 <div class="hub-controls">
-    <!-- Buttons disabled until JS is ready -->
     <button @onclick="JoinMatchmaking" disabled="@(jsInitialized ? null : true)">Rejoindre le matchmaking</button>
     <button @onclick="LeaveMatchmaking" disabled="@(jsInitialized ? null : true)">Quitter le matchmaking</button>
 </div>
@@ -16,21 +15,18 @@
     <p>@statusMessage</p>
 </div>
 
-<!-- Game container to be updated by JS -->
 <div id="gameContainer" style="width:480px; height:480px; border:1px solid #ccc;"></div>
 
 @code {
     private string statusMessage = "Bienvenue sur le hub de jeu.";
     private string sessionToken = string.Empty;
     private bool jsInitialized = false;
-    // Token pour annuler le long polling
     private CancellationTokenSource pollingCts;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Small delay to ensure scripts are loaded
             await Task.Delay(100);
             sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
             if (string.IsNullOrWhiteSpace(sessionToken))
@@ -47,10 +43,6 @@
         }
     }
 
-    /// <summary>
-    /// Appelle l'endpoint /api/matchmaking/join pour mettre le joueur dans la file,
-    /// puis démarre le long polling sur /api/matchmaking/status.
-    /// </summary>
     private async Task JoinMatchmaking()
     {
         try
@@ -65,11 +57,13 @@
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
 
-            var joinResponse = await Http.GetAsync("http://localhost:5000/api/matchmaking/join");
+            Console.WriteLine("Sending request: Join Matchmaking");
+            var joinResponse = await Http.GetAsync("http://localhost:5181/api/matchmaking/join");
+            Console.WriteLine($"Join Matchmaking response: {joinResponse.StatusCode}");
+
             if (joinResponse.IsSuccessStatusCode)
             {
                 statusMessage = await joinResponse.Content.ReadAsStringAsync();
-                // Create a cancellation token for polling
                 pollingCts = new CancellationTokenSource();
                 await PollMatchmakingStatusAsync(pollingCts.Token);
             }
@@ -81,15 +75,10 @@
         catch (Exception ex)
         {
             statusMessage = ex.Message;
+            Console.WriteLine($"Join Matchmaking exception: {ex}");
         }
     }
 
-    /// <summary>
-    /// Effectue le long polling sur l'endpoint /api/matchmaking/status.
-    /// Si la réponse contient des informations de partie (game_id), on initialise l'interface du jeu.
-    /// Sinon, s'il indique que le joueur est toujours en file, il réitère la requête après un délai.
-    /// </summary>
-    /// <param name="token">Le CancellationToken pour annuler le long polling.</param>
     private async Task PollMatchmakingStatusAsync(CancellationToken token)
     {
         bool gameFound = false;
@@ -97,15 +86,16 @@
         {
             try
             {
-                var statusResponse = await Http.GetAsync("http://localhost:5000/api/matchmaking/status", token);
-                if (statusResponse.IsSuccessStatusCode)
+                Console.WriteLine("Sending request: Poll Matchmaking Status");
+                var statusResponse = await Http.GetAsync("http://localhost:5181/api/matchmaking/status", token);
+                Console.WriteLine($"Poll Matchmaking Status response: {statusResponse.StatusCode}");
+
+                if (statusResponse.IsSuccessStatusCode) //take msg instead of response status code
                 {
                     var resultJson = await statusResponse.Content.ReadAsStringAsync();
-                    // If the response indicates game info (for instance, contains "game_id")
-                    if (resultJson.Contains("game_id"))
+                    if (resultJson.Contains("matchId"))
                     {
                         statusMessage = $"Vous avez rejoint la partie : {resultJson}";
-
                         await JS.InvokeVoidAsync("initializeGameCanvas", "gameContainer");
                         gameFound = true;
                         StateHasChanged();
@@ -126,23 +116,21 @@
             catch (TaskCanceledException)
             {
                 statusMessage = "Long polling annulé.";
+                Console.WriteLine("Polling was cancelled.");
                 StateHasChanged();
                 break;
             }
             catch (Exception ex)
             {
                 statusMessage = ex.Message;
+                Console.WriteLine($"Polling exception: {ex}");
                 StateHasChanged();
             }
 
-            // Wait for 2 seconds before sending the next status request
             await Task.Delay(2000, token);
         }
     }
 
-    /// <summary>
-    /// Appelle l'endpoint /api/matchmaking/leave pour retirer le joueur de la file, et annule le long polling.
-    /// </summary>
     private async Task LeaveMatchmaking()
     {
         try
@@ -152,7 +140,10 @@
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
 
-            var leaveResponse = await Http.GetAsync("http://localhost:5000/api/matchmaking/leave");
+            Console.WriteLine("Sending request: Leave Matchmaking");
+            var leaveResponse = await Http.GetAsync("http://localhost:5181/api/matchmaking/leave");
+            Console.WriteLine($"Leave Matchmaking response: {leaveResponse.StatusCode}");
+
             if (leaveResponse.IsSuccessStatusCode)
             {
                 statusMessage = await leaveResponse.Content.ReadAsStringAsync();
@@ -165,6 +156,7 @@
         catch (Exception ex)
         {
             statusMessage = ex.Message;
+            Console.WriteLine($"Leave Matchmaking exception: {ex}");
         }
     }
 }
