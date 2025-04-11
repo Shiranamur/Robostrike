@@ -93,6 +93,7 @@ function handleMovement(e) {
 // script.js
 
 function initializeGameCanvas(containerId) {
+  console.log("Initializing game canvas for container:", containerId);
   var container = document.getElementById(containerId);
   if (!container) return;
 

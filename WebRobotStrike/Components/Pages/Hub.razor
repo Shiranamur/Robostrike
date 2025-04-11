@@ -7,93 +7,164 @@
 <h3>Hub de jeu</h3>
 
 <div class="hub-controls">
-    <button @onclick="JoinMatchmaking" disabled="@(_jsInitialized ? null : true)">Rejoindre le matchmaking</button>
-    <button @onclick="LeaveMatchmaking" disabled="@(_jsInitialized ? null : true)">Quitter le matchmaking</button>
+    <!-- Buttons disabled until JS is ready -->
+    <button @onclick="JoinMatchmaking" disabled="@(jsInitialized ? null : true)">Rejoindre le matchmaking</button>
+    <button @onclick="LeaveMatchmaking" disabled="@(jsInitialized ? null : true)">Quitter le matchmaking</button>
 </div>
 
 <div class="hub-status">
-    <p>@_statusMessage</p>
+    <p>@statusMessage</p>
 </div>
 
+<!-- Game container to be updated by JS -->
 <div id="gameContainer" style="width:480px; height:480px; border:1px solid #ccc;"></div>
 
 @code {
-    private string _statusMessage = "Bienvenue sur le hub de jeu.";
-    private string _sessionToken = string.Empty;
-    private bool _jsInitialized = false;
+    private string statusMessage = "Bienvenue sur le hub de jeu.";
+    private string sessionToken = string.Empty;
+    private bool jsInitialized = false;
+    // Token pour annuler le long polling
+    private CancellationTokenSource pollingCts;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Appeler la fonction JS pour récupérer le token de session
-            _sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
-            if (string.IsNullOrWhiteSpace(_sessionToken))
+            // Small delay to ensure scripts are loaded
+            await Task.Delay(100);
+            sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
+            if (string.IsNullOrWhiteSpace(sessionToken))
             {
-                // Rediriger vers la page de login si aucun token n'est trouvé.
-                //Navigation.NavigateTo("/login");
-                Console.WriteLine("bite");
+                Navigation.NavigateTo("/login");
+                return;
             }
             else
             {
-                _statusMessage = "Token récupéré avec succès.";
+                statusMessage = "Token récupéré avec succès.";
             }
-            _jsInitialized = true;
+            jsInitialized = true;
             StateHasChanged();
         }
     }
 
+    /// <summary>
+    /// Appelle l'endpoint /api/matchmaking/join pour mettre le joueur dans la file,
+    /// puis démarre le long polling sur /api/matchmaking/status.
+    /// </summary>
     private async Task JoinMatchmaking()
     {
         try
         {
-            // Vérifier que le token a bien été récupéré
-            if (!_jsInitialized || string.IsNullOrWhiteSpace(_sessionToken))
+            if (!jsInitialized || string.IsNullOrWhiteSpace(sessionToken))
             {
-                _statusMessage = "Token de session introuvable.";
+                statusMessage = "Token de session introuvable.";
                 Navigation.NavigateTo("/login");
                 return;
             }
 
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _sessionToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
 
-            var response = await Http.GetAsync("http://localhost:5181/api/matchmaking/join");
-            if (response.IsSuccessStatusCode)
+            var joinResponse = await Http.GetAsync("http://localhost:5000/api/matchmaking/join");
+            if (joinResponse.IsSuccessStatusCode)
             {
-                _statusMessage = await response.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("initializeGameCanvas", "gameContainer");
+                statusMessage = await joinResponse.Content.ReadAsStringAsync();
+                // Create a cancellation token for polling
+                pollingCts = new CancellationTokenSource();
+                await PollMatchmakingStatusAsync(pollingCts.Token);
             }
             else
             {
-                _statusMessage = $"Erreur: {response.StatusCode}";
+                statusMessage = $"Erreur lors du join: {joinResponse.StatusCode}";
             }
         }
         catch (Exception ex)
         {
-            _statusMessage = ex.Message;
+            statusMessage = ex.Message;
         }
     }
 
+    /// <summary>
+    /// Effectue le long polling sur l'endpoint /api/matchmaking/status.
+    /// Si la réponse contient des informations de partie (game_id), on initialise l'interface du jeu.
+    /// Sinon, s'il indique que le joueur est toujours en file, il réitère la requête après un délai.
+    /// </summary>
+    /// <param name="token">Le CancellationToken pour annuler le long polling.</param>
+    private async Task PollMatchmakingStatusAsync(CancellationToken token)
+    {
+        bool gameFound = false;
+        while (!gameFound && !token.IsCancellationRequested)
+        {
+            try
+            {
+                var statusResponse = await Http.GetAsync("http://localhost:5000/api/matchmaking/status", token);
+                if (statusResponse.IsSuccessStatusCode)
+                {
+                    var resultJson = await statusResponse.Content.ReadAsStringAsync();
+                    // If the response indicates game info (for instance, contains "game_id")
+                    if (resultJson.Contains("game_id"))
+                    {
+                        statusMessage = $"Vous avez rejoint la partie : {resultJson}";
+
+                        await JS.InvokeVoidAsync("initializeGameCanvas", "gameContainer");
+                        gameFound = true;
+                        StateHasChanged();
+                        break;
+                    }
+                    else
+                    {
+                        statusMessage = "En attente... " + resultJson;
+                        StateHasChanged();
+                    }
+                }
+                else
+                {
+                    statusMessage = $"Erreur du statut: {statusResponse.StatusCode}";
+                    StateHasChanged();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                statusMessage = "Long polling annulé.";
+                StateHasChanged();
+                break;
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                StateHasChanged();
+            }
+
+            // Wait for 2 seconds before sending the next status request
+            await Task.Delay(2000, token);
+        }
+    }
+
+    /// <summary>
+    /// Appelle l'endpoint /api/matchmaking/leave pour retirer le joueur de la file, et annule le long polling.
+    /// </summary>
     private async Task LeaveMatchmaking()
     {
         try
         {
+            pollingCts?.Cancel();
+
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _sessionToken);
-            var response = await Http.GetAsync("http://localhost:5181/api/matchmaking/leave");
-            if (response.IsSuccessStatusCode)
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+
+            var leaveResponse = await Http.GetAsync("http://localhost:5000/api/matchmaking/leave");
+            if (leaveResponse.IsSuccessStatusCode)
             {
-                _statusMessage = await response.Content.ReadAsStringAsync();
+                statusMessage = await leaveResponse.Content.ReadAsStringAsync();
             }
             else
             {
-                _statusMessage = $"Erreur: {response.StatusCode}";
+                statusMessage = $"Erreur lors du leave: {leaveResponse.StatusCode}";
             }
         }
         catch (Exception ex)
         {
-            _statusMessage = ex.Message;
+            statusMessage = ex.Message;
         }
     }
 }
