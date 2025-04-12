@@ -212,7 +212,7 @@ namespace tiz_teh_final_csharp_project
                         (wPlayer.y == qPlayer.y || wPlayer.y == qPlayer.yA) &&
                         wPlayer.id != qPlayer.id)
                     {
-                        qPlayer.HandleCollision(wPlayer, qPlayer, map);
+                        qPlayer.HandleCollision(wPlayer, qPlayer, map, Players);
                         qPlayer.events = 1;
                         wPlayer.events = 1;
                     }
