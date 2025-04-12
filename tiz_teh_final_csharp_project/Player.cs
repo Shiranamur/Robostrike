@@ -1,48 +1,46 @@
-using System;
 using System.Text.Json.Serialization;
 
 namespace tiz_teh_final_csharp_project
 {
     public class Player
     {
-        public int id { get; set; }
-        public int x { get; set; }
-        public int y { get; set; }
-        public char direction { get; set;}
-        public char curInput { get; set; }
-        public string inputs { get; set;}
-        [JsonPropertyName("previousX")]
-        public int xA { get; set; }
-        [JsonPropertyName("previousY")]
-        public int yA { get; set; }
-        public int events { get; set; }
-        public int push = 0;
-        public char pushDirection;
+        public int Id { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public char Direction { get; set; }
+        public char CurInput { get; set; }
+        public string Inputs { get; set; }
+        [JsonPropertyName("previousX")] public int XOld { get; set; }
+        [JsonPropertyName("previousY")] public int YOld { get; set; }
+        public int Events { get; set; }
+        private int _push;
+        private char _pushDirection;
 
         public void MoveForward(Map carte)
         {
-            int newX = x;
-            int newY = y;
-            push = 1;
+            int newX = X;
+            int newY = Y;
+            _push = 1;
             if (carte == null)
             {
-                Console.WriteLine($"Player {id}: Carte is null!");
+                Console.WriteLine($"Player {Id}: Carte is null!");
                 return;
             }
-            pushDirection = direction;
-            if (direction == 'N')
+
+            _pushDirection = Direction;
+            if (Direction == 'N')
             {
                 newY += -1;
             }
-            else if (direction == 'S')
+            else if (Direction == 'S')
             {
                 newY += 1;
             }
-            else if (direction == 'E')
+            else if (Direction == 'E')
             {
                 newX += 1;
             }
-            else if (direction == 'W')
+            else if (Direction == 'W')
             {
                 newX += -1;
             }
@@ -51,206 +49,336 @@ namespace tiz_teh_final_csharp_project
                 Console.WriteLine("Invalid direction");
             }
 
-            bool isValid = carte.isValidMove(newX, newY);
-            Console.WriteLine($"Player {id}: Attempting to move to ({newX}, {newY}). Is valid move? {isValid}");
+            bool isValid = carte.IsValidMove(newX, newY);
+            Console.WriteLine($"Player {Id}: Attempting to move to ({newX}, {newY}). Is valid move? {isValid}");
 
             if (isValid)
             {
-                xA = x;
-                yA = y;
-                x = newX;
-                y = newY;
-                Console.WriteLine($"Player {id}: Successfully moved pos forward to ({x}, {y})");
+                XOld = X;
+                YOld = Y;
+                X = newX;
+                Y = newY;
+                Console.WriteLine($"Player {Id}: Successfully moved pos forward to ({X}, {Y})");
             }
             else
             {
-                Console.WriteLine($"Player {id}: Move to ({newX}, {newY}) is invalid.");
+                Console.WriteLine($"Player {Id}: Move to ({newX}, {newY}) is invalid.");
             }
         }
 
         public void RotateLeft()
         {
-            push = 0;
+            _push = 0;
             Console.WriteLine("Rotating Left");
-            if (direction == 'N')
+            if (Direction == 'N')
             {
-                direction = 'W';
+                Direction = 'W';
             }
-            else if (direction == 'E')
+            else if (Direction == 'E')
             {
-                direction = 'N';
+                Direction = 'N';
             }
-            else if (direction == 'S')
+            else if (Direction == 'S')
             {
-                direction = 'E';
+                Direction = 'E';
             }
-            else if (direction == 'W')
+            else if (Direction == 'W')
             {
-                direction = 'S';
+                Direction = 'S';
             }
             else
             {
                 Console.WriteLine("Direction invalide");
             }
-            pushDirection = direction;
+
+            _pushDirection = Direction;
         }
 
         public void RotateRight()
         {
-            push = 0;
+            _push = 0;
             Console.WriteLine("Rotating right");
-            if (direction == 'N')
+            if (Direction == 'N')
             {
-                direction = 'E';
+                Direction = 'E';
             }
-            else if (direction == 'E')
+            else if (Direction == 'E')
             {
-                direction = 'S';
+                Direction = 'S';
             }
-            else if (direction == 'S')
+            else if (Direction == 'S')
             {
-                direction = 'W';
+                Direction = 'W';
             }
-            else if (direction == 'W')
+            else if (Direction == 'W')
             {
-                direction = 'N';
+                Direction = 'N';
             }
             else
             {
                 Console.WriteLine("Direction invalide");
             }
-            pushDirection = direction;
+
+            _pushDirection = Direction;
         }
 
         public void MoveBackward(Map carte)
         {
-            int newX = x;
-            int newY = y;
-            push = 1;
+            int newX = X;
+            int newY = Y;
+            _push = 1;
 
             if (carte == null)
             {
-                Console.WriteLine($"Player {id}: Carte is null!");
+                Console.WriteLine($"Player {Id}: Carte is null!");
                 return;
             }
-            if (direction == 'N')
+
+            if (Direction == 'N')
             {
                 newY += 1;
-                pushDirection = 'S';
+                _pushDirection = 'S';
             }
-            else if (direction == 'S')
+            else if (Direction == 'S')
             {
                 newY += -1;
-                pushDirection = 'N';
+                _pushDirection = 'N';
             }
-            else if (direction == 'E')
+            else if (Direction == 'E')
             {
                 newX += -1;
-                pushDirection = 'W';
+                _pushDirection = 'W';
             }
-            else if (direction == 'W')
+            else if (Direction == 'W')
             {
                 newX += 1;
-                pushDirection = 'E';
+                _pushDirection = 'E';
             }
             else
             {
                 Console.WriteLine("Invalid direction");
             }
 
-            bool isValid = carte.isValidMove(newX, newY);
-            Console.WriteLine($"Player {id}: Attempting to move to ({newX}, {newY}). Is valid move? {isValid}");
+            bool isValid = carte.IsValidMove(newX, newY);
+            Console.WriteLine($"Player {Id}: Attempting to move to ({newX}, {newY}). Is valid move? {isValid}");
 
             if (isValid)
             {
-                xA = x;
-                yA = y;
-                x = newX;
-                y = newY;
-                Console.WriteLine($"Player {id}: Successfully moved backwards to ({x}, {y})");
+                XOld = X;
+                YOld = Y;
+                X = newX;
+                Y = newY;
+                Console.WriteLine($"Player {Id}: Successfully moved backwards to ({X}, {Y})");
             }
             else
             {
-                Console.WriteLine($"Player {id}: Move to ({newX}, {newY}) is invalid.");
+                Console.WriteLine($"Player {Id}: Move to ({newX}, {newY}) is invalid.");
             }
         }
 
-        public string EnterInput(Player player)
+        public static string? EnterInput(Player player)
         {
-            Console.WriteLine("Enter inputs for player " + player.id);
-            return (Console.ReadLine());
-
+            Console.WriteLine("Enter inputs for player " + player.Id);
+            return Console.ReadLine();
         }
 
-
-        public void HandleCollision(Player player1, Player player2, Map carte)
+        //checks number of players at given coordinates
+        public static int CheckTile(int x, int y, List<Player> players)
         {
-            if (player1.push > player2.push && player2.push == 0)
+            int i = 0;
+            foreach (var player in players)
             {
-                if (player1.pushDirection == 'N')
+                if (player.X == x && player.Y == y)
                 {
-                    bool isValid = carte.isValidMove(player2.x, player2.y - 1);
-                    if (isValid)
-                    {
-                        player2.y += -1;
-                    }
-                    else
-                    {
-                        player1.x = player1.xA;
-                        player1.y = player1.yA;
-                    }
+                    i += 1;
                 }
-                else if (player1.pushDirection == 'E')
-                {
-                    bool isValid = carte.isValidMove(player2.x + 1, player2.y);
-                    Console.WriteLine(isValid);
-                    if (isValid)
-                    {
-                        player2.x += 1;
-                    }
-                    else
-                    {
-                        player1.x = player1.xA;
-                        player1.y = player1.yA;
-                    }
-                }
-                else if (player1.pushDirection == 'W')
-                {
-                    bool isValid = carte.isValidMove(player2.x - 1, player2.y);
-                    if (isValid)
-                    {
-                        player2.x += -1;
-                    }
-                    else
-                    {
-                        player1.x = player1.xA;
-                        player1.y = player1.yA;
-                    }
-                }
-                else if (player1.pushDirection == 'S')
-                {
-                    bool isValid = carte.isValidMove(player2.x, player2.y + 1);
-                    if (isValid)
-                    {
-                        player2.y += 1;
-                    }
-                    else
-                    {
-                        player1.x = player1.xA;
-                        player1.y = player1.yA;
-                    }
-                }
-                Console.WriteLine("Pushed once");
-
             }
-            else if (player1.push == player2.push)
+
+            return i;
+        }
+
+        public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
+        {
+            if (player1._push > player2._push && player2._push == 0)
             {
+                if (player1._pushDirection == 'N')
+                {
+                    player2._push = 1;
+                    player2._pushDirection = 'N';
+                    bool isValid = carte.IsValidMove(player2.X, player2.Y - 1);
+                    if (isValid && CheckTile(player2.X, player2.Y - 1, players) == 1)
+                    {
+                        foreach (var player in players)
+                        {
+                            if (player2.X == player.X && player2.Y - 1 == player.Y)
+                            {
+                                player.YOld = player.Y;
+                                player2.YOld = player2.Y;
+                                player2.Y += -1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.Y = player1.YOld;
+                                    player2.Y = player2.YOld;
+                                    player.Y = player.YOld;
 
-                player1.x = player1.xA;
-                player1.y = player1.yA;
-                player2.x = player2.xA;
-                player2.y = player2.yA;
+                                    return 0;
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.X, player2.Y - 1, players) == 0)
+                    {
+                        player2.Y += -1;
+                        return 1;
+                    }
+                    else
+                    {
+                        player1.Y = player1.YOld;
+                        return 0;
+                    }
+                }
+                else if (player1._pushDirection == 'E')
+                {
+                    player2._push = 1;
+                    player2._pushDirection = 'E';
+                    bool isValid = carte.IsValidMove(player2.X + 1, player2.Y);
+                    if (isValid && CheckTile(player2.X + 1, player2.Y, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach (var player in players)
+                        {
+                            if (player2.X + 1 == player.X && player2.Y == player.Y)
+                            {
+                                player.XOld = player.X;
+                                player2.XOld = player2.X;
+                                player2.X += 1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.X = player1.XOld;
+                                    player2.X = player2.XOld;
+                                    player.X = player.XOld;
+
+                                    return 0;
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.X + 1, player2.Y, players) == 0)
+                    {
+                        player2.X += 1;
+                        return 1;
+                    }
+                    else
+                    {
+                        player1.X = player1.XOld;
+                        return 0;
+                    }
+                }
+                else if (player1._pushDirection == 'W')
+                {
+                    player2._push = 1;
+                    player2._pushDirection = 'W';
+                    bool isValid = carte.IsValidMove(player2.X - 1, player2.Y);
+                    if (isValid && CheckTile(player2.X - 1, player2.Y, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach (var player in players)
+                        {
+                            if (player2.X - 1 == player.X && player2.Y == player.Y)
+                            {
+                                player.XOld = player.X;
+                                player2.XOld = player2.X;
+                                player2.X += -1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.X = player1.XOld;
+                                    player2.X = player2.XOld;
+                                    player.X = player.XOld;
+
+                                    return 0;
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.X - 1, player2.Y, players) == 0)
+                    {
+                        player2.X += -1;
+                        return 1;
+                    }
+                    else
+                    {
+                        player1.X = player1.XOld;
+                        return 0;
+                    }
+                }
+                else if (player1._pushDirection == 'S')
+                {
+                    player2._push = 1;
+                    player2._pushDirection = 'S';
+                    bool isValid = carte.IsValidMove(player2.X, player2.Y + 1);
+                    if (isValid && CheckTile(player2.X, player2.Y + 1, players) == 1)
+                    {
+                        Console.WriteLine("prout");
+                        foreach (var player in players)
+                        {
+                            if (player2.X == player.X && player2.Y + 1 == player.Y)
+                            {
+                                player.YOld = player.Y;
+                                player2.YOld = player2.Y;
+                                player2.Y += 1;
+                                if (HandleCollision(player2, player, carte, players) == 1)
+                                {
+                                    Console.WriteLine("1");
+                                    return 1;
+                                }
+                                else
+                                {
+                                    player1.Y = player1.YOld;
+                                    player2.Y = player2.YOld;
+                                    player.Y = player.YOld;
+
+                                    return 0;
+                                }
+                            }
+                        }
+                    }
+                    else if (isValid && CheckTile(player2.X, player2.Y + 1, players) == 0)
+                    {
+                        player2.Y += 1;
+                        return 1;
+                    }
+                    else
+                    {
+                        player1.Y = player1.YOld;
+                        return 0;
+                    }
+                }
+                else if (player1._push == player2._push)
+                {
+                    player1.X = player1.XOld;
+                    player1.Y = player1.YOld;
+                    player2.X = player2.XOld;
+                    player2.Y = player2.YOld;
+                    return 0;
+                }
             }
+
+            return -1;
         }
     }
 }

@@ -10,7 +10,7 @@ public class GameManager
 
     private readonly QueueManager _queueManager;
     private readonly MapHelper _mapHelper;
-    private readonly int MinimumPlayers = 2;
+    private readonly int _minimumPlayers = 2;
 
     public GameManager(QueueManager queueManager, MapHelper mapHelper)
     {
@@ -22,7 +22,7 @@ public class GameManager
     private void OnQueueUpdatedHandler()
     {
         // Call the async Task method and log exceptions.
-        if (_queueManager.GetQueuedPlayerIds().Count >= MinimumPlayers)
+        if (_queueManager.GetQueuedPlayerIds().Count >= _minimumPlayers)
         {
             List<int> playersId = _queueManager.GetQueuedPlayerIds().Take(2).ToList(); 
             _ = GameCreationAsync(playersId).ContinueWith(task =>
@@ -39,11 +39,10 @@ public class GameManager
     
     {
         Console.WriteLine("[debug] Creating new game");
-        List<Player> players = playersIds.Select(id => new Player { id = id }).ToList();
+        List<Player> players = playersIds.Select(id => new Player { Id = id }).ToList();
         var mapFile = _mapHelper.PickRandomMap();
         var matchId = Guid.NewGuid().ToString();
-        var game = new Game(mapFile, players);
-        game.MatchId = matchId;
+        var game = new Game(mapFile, players, matchId);
         _activeGames.Add(matchId, game);
         
         // Add players to pending notifications BEFORE removing them from queue
@@ -111,24 +110,6 @@ public class GameManager
                 return existingCallbacks;
             });
     }
-
-    // updates status for the player and fires only the concerned callbacks
-    public void UpdateStatus(int playerId, Dictionary<string, string> status)
-    {
-        // Add to pending notifications before removing from queue
-        _pendingNotifications.Add(playerId);
-
-        if (_statusCallbacks.TryRemove(playerId, out List<Action<object>> callbacks))
-        {
-            foreach (var callback in callbacks)
-            {
-                callback.Invoke(status);
-            }
-
-            // Remove from pending notifications when callback is executed
-            _pendingNotifications.Remove(playerId);
-        }
-    }
     
     public bool UpdateStatusIfCallbackExists(int playerId, object status)
     {
@@ -156,7 +137,7 @@ public class GameManager
     public string? GetPlayerGameId(int playerId)
     {
         return _activeGames
-            .Where(kvp => kvp.Value.Players.Any(p => p.id == playerId))
+            .Where(kvp => kvp.Value.Players.Any(p => p.Id == playerId))
             .Select(kvp => kvp.Key)
             .FirstOrDefault();
     }
