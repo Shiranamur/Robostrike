@@ -68,14 +68,14 @@ public class GameManager
         for (int retry = 0; retry < maxRetries; retry++)
         {
             // Try to notify any players who haven't been notified yet
-            foreach (var playerId in playerIds.Where(id => !notifiedPlayers.Contains(id)))
-            {
-                if (this.UpdateStatusIfCallbackExists(playerId, game))
+            playerIds.Where(id => !notifiedPlayers.Contains(id))
+                .Where(id => this.UpdateStatusIfCallbackExists(id, game))
+                .ToList()  // Materialize the query before applying side effects
+                .ForEach(id => 
                 {
-                    notifiedPlayers.Add(playerId);
-                    Console.WriteLine($"[debug] Player {playerId} notified about game {game}");
-                }
-            }
+                    notifiedPlayers.Add(id);
+                    Console.WriteLine($"[debug] Player {id} notified about game {game}");
+                });
         
             // If all players notified, break out of the loop
             if (notifiedPlayers.Count == playerIds.Count)
@@ -92,7 +92,7 @@ public class GameManager
         }
     }    
 
-    public Game GetGame(string matchId)
+    public Game? GetGame(string matchId)
     {
         _activeGames.TryGetValue(matchId, out var game);
         return game;
@@ -151,5 +151,13 @@ public class GameManager
     public bool IsInPendingNotifications(int playerId)
     {
         return _pendingNotifications.Contains(playerId);
+    }
+
+    public string? GetPlayerGameId(int playerId)
+    {
+        return _activeGames
+            .Where(kvp => kvp.Value.Players.Any(p => p.id == playerId))
+            .Select(kvp => kvp.Key)
+            .FirstOrDefault();
     }
 }

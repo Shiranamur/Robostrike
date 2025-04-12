@@ -18,7 +18,13 @@ public class GameEndpoints : IEndpointMapper
             {
                 if (string.IsNullOrEmpty(gameId))
                 {
-                    return Results.BadRequest("Must give a valid Game ID, or game is finished");
+                    return Results.BadRequest("Must give a valid Game ID");
+                }
+                Game? game = gameManager.GetGame(gameId);
+
+                if (game == null)
+                {
+                    return Results.NotFound();
                 }
 
                 var context = request.HttpContext;
@@ -28,7 +34,6 @@ public class GameEndpoints : IEndpointMapper
                 {
                     try
                     {
-                        Game game = gameManager.GetGame(gameId);
                         string playerMoves6Maxlength = new string(playerMoves.Take(6).ToArray());
                         game.SubmitPlayerInput(userId, playerMoves6Maxlength);
                         Console.WriteLine("test");
@@ -48,5 +53,34 @@ public class GameEndpoints : IEndpointMapper
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status500InternalServerError)
             .Produces(StatusCodes.Status401Unauthorized);
+
+        app.MapGet("/api/game/{gameId}/status", async (string gameId, GameManager gameManager) =>
+        {
+            if (string.IsNullOrEmpty(gameId))
+            {
+                return Results.BadRequest("Must give a valid Game ID");
+            }
+            Game? game = gameManager.GetGame(gameId);
+
+            if (game == null)
+            {
+                return Results.NotFound();
+            }
+
+            try
+            { 
+                // todo : find the way to return the good turn to the user
+                // todo : create the class or dataformat to return to the user from this route
+                // returns the initial statue of the game for filer
+                return Results.Ok(new { Status = new { game_id = gameId, game_state = game.GetInitialState() } });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                return Results.InternalServerError("Unexpected behavior from the game occurred");
+            }
+
+            return Results.Ok(new { Status = new { game_id = gameId } });
+        });
     }
 }
