@@ -7,38 +7,38 @@
 <h3>Hub de jeu</h3>
 
 <div class="hub-controls">
-    <button @onclick="JoinMatchmaking" disabled="@(jsInitialized ? null : true)">Rejoindre le matchmaking</button>
-    <button @onclick="LeaveMatchmaking" disabled="@(jsInitialized ? null : true)">Quitter le matchmaking</button>
+    <button @onclick="JoinMatchmaking" disabled="@(_jsInitialized ? null : true)">Rejoindre le matchmaking</button>
+    <button @onclick="LeaveMatchmaking" disabled="@(_jsInitialized ? null : true)">Quitter le matchmaking</button>
 </div>
 
 <div class="hub-status">
-    <p>@statusMessage</p>
+    <p>@_statusMessage</p>
 </div>
 
 <div id="gameContainer" style="width:480px; height:480px; border:1px solid #ccc;"></div>
 
 @code {
-    private string statusMessage = "Bienvenue sur le hub de jeu.";
-    private string sessionToken = string.Empty;
-    private bool jsInitialized = false;
-    private CancellationTokenSource pollingCts;
+    private string _statusMessage = "Bienvenue sur le hub de jeu.";
+    private string _sessionToken = string.Empty;
+    private bool _jsInitialized = false;
+    private CancellationTokenSource _pollingCts;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await Task.Delay(100);
-            sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
-            if (string.IsNullOrWhiteSpace(sessionToken))
+            _sessionToken = await JS.InvokeAsync<string>("localStore.get", "sessionToken");
+            if (string.IsNullOrWhiteSpace(_sessionToken))
             {
                 Navigation.NavigateTo("/login");
                 return;
             }
             else
             {
-                statusMessage = "Token récupéré avec succès.";
+                _statusMessage = "Token récupéré avec succès.";
             }
-            jsInitialized = true;
+            _jsInitialized = true;
             StateHasChanged();
         }
     }
@@ -47,15 +47,15 @@
     {
         try
         {
-            if (!jsInitialized || string.IsNullOrWhiteSpace(sessionToken))
+            if (!_jsInitialized || string.IsNullOrWhiteSpace(_sessionToken))
             {
-                statusMessage = "Token de session introuvable.";
+                _statusMessage = "Token de session introuvable.";
                 Navigation.NavigateTo("/login");
                 return;
             }
 
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _sessionToken);
 
             Console.WriteLine("Sending request: Join Matchmaking");
             var joinResponse = await Http.GetAsync("http://localhost:5181/api/matchmaking/join");
@@ -63,18 +63,18 @@
 
             if (joinResponse.IsSuccessStatusCode)
             {
-                statusMessage = await joinResponse.Content.ReadAsStringAsync();
-                pollingCts = new CancellationTokenSource();
-                await PollMatchmakingStatusAsync(pollingCts.Token);
+                _statusMessage = await joinResponse.Content.ReadAsStringAsync();
+                _pollingCts = new CancellationTokenSource();
+                await PollMatchmakingStatusAsync(_pollingCts.Token);
             }
             else
             {
-                statusMessage = $"Erreur lors du join: {joinResponse.StatusCode}";
+                _statusMessage = $"Erreur lors du join: {joinResponse.StatusCode}";
             }
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            _statusMessage = ex.Message;
             Console.WriteLine($"Join Matchmaking exception: {ex}");
         }
     }
@@ -95,7 +95,7 @@
                     var resultJson = await statusResponse.Content.ReadAsStringAsync();
                     if (resultJson.Contains("matchId"))
                     {
-                        statusMessage = $"Vous avez rejoint la partie : {resultJson}";
+                        _statusMessage = $"Vous avez rejoint la partie : {resultJson}";
                         await JS.InvokeVoidAsync("initializeGameCanvas", "gameContainer");
                         gameFound = true;
                         StateHasChanged();
@@ -103,26 +103,26 @@
                     }
                     else
                     {
-                        statusMessage = "En attente... " + resultJson;
+                        _statusMessage = "En attente... " + resultJson;
                         StateHasChanged();
                     }
                 }
                 else
                 {
-                    statusMessage = $"Erreur du statut: {statusResponse.StatusCode}";
+                    _statusMessage = $"Erreur du statut: {statusResponse.StatusCode}";
                     StateHasChanged();
                 }
             }
             catch (TaskCanceledException)
             {
-                statusMessage = "Long polling annulé.";
+                _statusMessage = "Long polling annulé.";
                 Console.WriteLine("Polling was cancelled.");
                 StateHasChanged();
                 break;
             }
             catch (Exception ex)
             {
-                statusMessage = ex.Message;
+                _statusMessage = ex.Message;
                 Console.WriteLine($"Polling exception: {ex}");
                 StateHasChanged();
             }
@@ -135,10 +135,10 @@
     {
         try
         {
-            pollingCts?.Cancel();
+            _pollingCts?.Cancel();
 
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _sessionToken);
 
             Console.WriteLine("Sending request: Leave Matchmaking");
             var leaveResponse = await Http.GetAsync("http://localhost:5181/api/matchmaking/leave");
@@ -146,16 +146,16 @@
 
             if (leaveResponse.IsSuccessStatusCode)
             {
-                statusMessage = await leaveResponse.Content.ReadAsStringAsync();
+                _statusMessage = await leaveResponse.Content.ReadAsStringAsync();
             }
             else
             {
-                statusMessage = $"Erreur lors du leave: {leaveResponse.StatusCode}";
+                _statusMessage = $"Erreur lors du leave: {leaveResponse.StatusCode}";
             }
         }
         catch (Exception ex)
         {
-            statusMessage = ex.Message;
+            _statusMessage = ex.Message;
             Console.WriteLine($"Leave Matchmaking exception: {ex}");
         }
     }
