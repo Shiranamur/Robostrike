@@ -25,8 +25,7 @@ function renderMap(mapData) {
         console.error("renderMap: mapData.tiles is not available or not an array", mapData);
         return;
     }
-
-    // Clear existing content.
+    
     mapDiv.innerHTML = "";
 
     // Configure the grid based on the map dimensions.
@@ -43,10 +42,9 @@ function renderMap(mapData) {
         tileDiv.style.width = "48px";
         tileDiv.style.height = "48px";
         tileDiv.style.border = "1px solid #ddd";
-
-        // Use the correct property name ("Type")
+        
         const tileType = tile.type;
-        console.log("Tile type:", tileType); // Should output "normal" (or whatever type)
+        console.log("Tile type:", tileType);
         tileDiv.style.backgroundImage = `url('/images/Tiles/${tileType}.png')`;
         tileDiv.style.backgroundSize = "cover";
         tileDiv.style.backgroundPosition = "center";
