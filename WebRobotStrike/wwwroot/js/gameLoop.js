@@ -57,35 +57,43 @@ function renderMap(mapData) {
 function renderPlayers(players) {
     const mapDiv = document.getElementById("map");
     if (!mapDiv) return;
-    
-    const existingPlayers = mapDiv.querySelectorAll('.player');
-    existingPlayers.forEach(el => el.remove());
+
+    // Remove any existing player elements.
+    //const existingPlayers = mapDiv.querySelectorAll(".player");
+    //existingPlayers.forEach(el => el.remove());
 
     players.forEach(player => {
         const playerEl = document.createElement("div");
         playerEl.classList.add("player");
-        // needs modification, like hover on player or smth
-        playerEl.innerText = player.id;
         playerEl.style.position = "absolute";
         playerEl.style.left = (player.x * 48) + "px";
         playerEl.style.top = (player.y * 48) + "px";
         playerEl.style.width = "48px";
         playerEl.style.height = "48px";
-        playerEl.style.background = "rgba(0, 0, 0, 0.5)";
-        playerEl.style.color = "#fff";
-        playerEl.style.display = "flex";
-        playerEl.style.alignItems = "center";
-        playerEl.style.justifyContent = "center";
+
+        playerEl.style.backgroundImage = `url('/images/Sprites/player${player.id}.png')`;
+        playerEl.style.backgroundSize = "contain";
+        playerEl.style.backgroundRepeat = "no-repeat";
+        playerEl.style.backgroundPosition = "center";
+        // playerEl.innerText = player.id;
+
         mapDiv.appendChild(playerEl);
     });
 }
 
+
 function setupHud(){
     const hudTextArea = document.getElementById("hudTextArea");
     if (!hudTextArea) return;
-    
-    function addChar(char){
-        hudTextArea.value += char;
+
+    hudTextArea.maxLength = 6;
+    function addChar(char) {
+        if (hudTextArea.value.length < 6) {
+            hudTextArea.value += char;
+        } else {
+            triggerFlashMessage();
+            console.log("Input limit reached!");
+        }
     }
     
     const buttonMappings = [
@@ -119,5 +127,15 @@ function setupHud(){
             console.log("sent value to api:", commands);
             hudTextArea.value = "";
         });
+    }
+    function triggerFlashMessage() {
+        const flashDiv = document.getElementById("flashMessage");
+        if (!flashDiv) return;
+        
+        flashDiv.classList.add("show");
+        
+        setTimeout(() => {
+            flashDiv.classList.remove("show");
+        }, 1000);
     }
 }

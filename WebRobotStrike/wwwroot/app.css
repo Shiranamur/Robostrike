@@ -294,3 +294,29 @@ a, .btn-link {
     .import-card textarea {
         resize: vertical;
     }
+
+
+.flash {
+    position: absolute;
+    top: 200px;
+    left: 55%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.8); /* semi-transparent red */
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 2s ease-out;
+    z-index: 9999;
+}
+
+.flash.show {
+    opacity: 1;
+}
+
+
+/* When active, set opacity to full */
+.flash.show {
+    opacity: 1;
+}

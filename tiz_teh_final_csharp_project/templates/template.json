@@ -1,0 +1,21 @@
+﻿{
+  "turns": [
+    {
+      "turnNumber": 0,
+      "Players": [
+        {
+          "id": 1,
+          "is_alive": "True",
+          "finalX": 0,
+          "finalY": 0,
+          "Health": 2,
+          "direction": "S",
+          "curInput": "char",
+          "shot_hit_coord" : "[X,Y]",
+          "collision_type" : "push, pushed, collide, _",
+          "collision_data":{
+            "collision_coord" : "[x,y]",
+            "collision_with" : "id_other_player"
+            }
+        }
+      }]}
