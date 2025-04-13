@@ -15,6 +15,9 @@ namespace tiz_teh_final_csharp_project
         public int Events { get; set; }
         private int _push;
         private char _pushDirection;
+        public int health { get; set; }
+        public int hit { get; set; }
+        public int trigger { get; set; } 
 
         public void MoveForward(Map carte)
         {
@@ -197,6 +200,94 @@ namespace tiz_teh_final_csharp_project
             return i;
         }
 
+        public int Shoot(Map carte, List<Player> players)
+        {
+            if (Direction == 'S')
+            {
+                int i = Y;
+                i += 1;
+                while (i < carte.Height)
+                {
+                    if (CheckTile(X, i, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.X == X && player.Y == i)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i += 1;
+                }
+            }
+            else if (Direction == 'N')
+            {
+                int i = Y;
+                i -= 1;
+                while (i >= 0)
+                {
+                    if (CheckTile(X, i, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.X == X && player.Y == i)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i -= 1;
+                }
+            }
+            else if (Direction == 'E')
+            {
+                int i = X;
+                i += 1;
+                while (i >= 0)
+                {
+                    if (CheckTile(i, Y, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.X == i && player.Y == Y)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i += 1;
+                }
+            }
+            else if (Direction == 'W')
+            {
+                int i = X;
+                i -= 1;
+                while (i >= 0)
+                {
+                    if (CheckTile(i, Y, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.X == i && player.Y == Y)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i -= 1;
+                }
+            }
+            return -1;
+        }
         public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
         {
             if (player1._push > player2._push && player2._push == 0)
