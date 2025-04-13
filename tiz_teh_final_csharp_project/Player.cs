@@ -10,20 +10,23 @@ namespace tiz_teh_final_csharp_project
         public char Direction { get; set; }
         public char CurInput { get; set; }
         public string Inputs { get; set; }
-        [JsonPropertyName("previousX")] public int XOld { get; set; }
-        [JsonPropertyName("previousY")] public int YOld { get; set; }
-        private int _push;
+        public int XOld { get; set; }
+        public int YOld { get; set; }
+        public int Push;
         private char _pushDirection;
-        public bool IsPushed = false;
         public bool IsAlive = true;
         public int health { get; set; }
         public int hit { get; set; }
-        public string Action { get; set; }
+        public Dictionary<int, Dictionary<int, int>> ShotHitPlayer = new Dictionary<int, Dictionary<int, int>>();
+        public string CollisionType { get; set; }
+        public Dictionary<int, int> CollisionCoordinates = new Dictionary<int, int>();
+        public int CollisionWithId  { get; set;}
+        
         public void MoveForward(Map carte)
         {
             int newX = X;
             int newY = Y;
-            _push = 1;
+            Push = 1;
             if (carte == null)
             {
                 Console.WriteLine($"Player {Id}: Carte is null!");
@@ -71,7 +74,7 @@ namespace tiz_teh_final_csharp_project
 
         public void RotateLeft()
         {
-            _push = 0;
+            Push = 0;
             Console.WriteLine("Rotating Left");
             if (Direction == 'N')
             {
@@ -99,7 +102,7 @@ namespace tiz_teh_final_csharp_project
 
         public void RotateRight()
         {
-            _push = 0;
+            Push = 0;
             Console.WriteLine("Rotating right");
             if (Direction == 'N')
             {
@@ -129,7 +132,7 @@ namespace tiz_teh_final_csharp_project
         {
             int newX = X;
             int newY = Y;
-            _push = 1;
+            Push = 1;
 
             if (carte == null)
             {
@@ -250,7 +253,7 @@ namespace tiz_teh_final_csharp_project
         {
 
             // handle equal push case first
-            if (player1._push == player2._push)
+            if (player1.Push == player2.Push)
             {
                 player1.X = player1.XOld;
                 player1.Y = player1.YOld;
@@ -260,7 +263,7 @@ namespace tiz_teh_final_csharp_project
             }
             
             // if player1 doesn't have push priority, no collision handling occurs
-            if (!(player1._push > player2._push && player2._push == 0))
+            if (!(player1.Push > player2.Push && player2.Push == 0))
             {
                 return -1;
             }
@@ -277,7 +280,7 @@ namespace tiz_teh_final_csharp_project
             }
 
             // set player2 push properties
-            player2._push = 1;
+            player2.Push = 1;
             player2._pushDirection = player1._pushDirection;
             
             // check if move is valid
@@ -339,7 +342,6 @@ namespace tiz_teh_final_csharp_project
             }
 
             return -1;
-            
         }
     }
 }

@@ -30,11 +30,13 @@ namespace tiz_teh_final_csharp_project
         public int X { get; set; }
         public int Y { get; set; }
         public char Direction { get; set; }
-        public int PreviousX { get; set; }
-        public int PreviousY { get; set; }
-        public int Events { get; set; }
-        // not yet used
-        public int Action { get; set; }
+        public bool IsAlive { get; set; }
+        
+        public Dictionary<int, Dictionary<int, int>> ShotHitPlayer = new Dictionary<int, Dictionary<int, int>>();
+        public string CollisionType { get; set; }
+        public Dictionary<int, int> CollisionCoordinates = new Dictionary<int, int>();
+        public int CollisionWithId  { get; set;}
+
         public int Health { get; set; }
         public int Damage_Taken { get; set; }
     }
@@ -74,7 +76,11 @@ namespace tiz_teh_final_csharp_project
         
         private readonly Dictionary<int, RoundState> _completedRoundStates = new Dictionary<int, RoundState>();
 
-
+        private Dictionary<int, (string type, int withId, Dictionary<int, int> coordinates)> _currentTurnCollisions = 
+            new Dictionary<int, (string, int, Dictionary<int, int>)>();
+        
+        private Dictionary<int, Dictionary<int, Dictionary<int, int>>> _currentTurnShots = 
+            new Dictionary<int, Dictionary<int, Dictionary<int, int>>>();
         
         /// <summary>
         /// Constructeur de la classe Game.
@@ -323,26 +329,43 @@ namespace tiz_teh_final_csharp_project
             return null;
         }
         
-        
+                
         public void RecordTurnState(int currentTurn)
         {
             var turnState = new TurnState
             {
                 TurnNumber = currentTurn,
-                Players = Players.Select(p => new PlayerState
+                Players = Players.Select(p => 
                 {
-                    Id = p.Id,
-                    X = p.X,
-                    Y = p.Y,
-                    Direction = p.Direction,
-                    PreviousX = p.XOld,
-                    PreviousY = p.YOld,
-                    Events = p.Events
+                    var playerState = new PlayerState
+                    {
+                        Id = p.Id,
+                        X = p.X,
+                        Y = p.Y,
+                        Direction = p.Direction,
+                        IsAlive = p.IsAlive,
+                        Health = p.health,
+                        Damage_Taken = p.hit
+                    };
+                    
+                    // Add collision data if exists for this player
+                    if (_currentTurnCollisions.TryGetValue(p.Id, out var collisionData))
+                    {
+                        playerState.CollisionType = collisionData.type;
+                        playerState.CollisionWithId = collisionData.withId;
+                        playerState.CollisionCoordinates = collisionData.coordinates;
+                    }
+
+                    if (_currentTurnShots.TryGetValue(p.Id, out var shotData))
+                    {
+                        playerState.ShotHitPlayer = shotData;
+                    }
+                    
+                    return playerState;
                 }).ToList()
             };
             _currentRoundTurns.Add(turnState);
         }
-        
         
         /// <summary>
         /// Processes a single turn by applying player inputs and resolving collisions.
@@ -351,22 +374,88 @@ namespace tiz_teh_final_csharp_project
         /// <param name="turnInputs">Dictionary mapping player IDs to their input characters for this turn</param>
         private void ProcessTurn(Dictionary<int, char> turnInputs)
         {
+            // Clear previous turn's shot data
+            _currentTurnShots.Clear();
+            _currentTurnCollisions.Clear();
+            
             foreach (var player in Players)
             {
                 player.XOld = player.X;
                 player.YOld = player.Y;
-                ReadInput(player, turnInputs.GetValueOrDefault(player.Id, ' '), map);
-            }
-            foreach(var qPlayer in Players)
-            {
-                foreach(var wPlayer in Players)
+
+                if (player.IsAlive)
                 {
-                    if (wPlayer.X == qPlayer.X && wPlayer.Y == qPlayer.Y && wPlayer.Id != qPlayer.Id)
+                    ReadInput(player, turnInputs.GetValueOrDefault(player.Id, ' '), map);
+                }
+
+            }
+            
+            var processedCollisions = new HashSet<(int, int)>();
+
+            foreach(var currentPlayer in Players)
+            {
+                foreach(var otherPlayer in Players)
+                {
+                    if (currentPlayer.Id == otherPlayer.Id ||
+                        processedCollisions.Contains((currentPlayer.Id, otherPlayer.Id)) ||
+                        processedCollisions.Contains((otherPlayer.Id, currentPlayer.Id)))
+                        continue;
+
+                    // check if positions overlap
+                    if (otherPlayer.X == currentPlayer.X && otherPlayer.Y == currentPlayer.Y)
                     {
-                        qPlayer.HandleCollision(wPlayer,qPlayer, map, Players);
+                        // Determine which player has push priority
+                        if (currentPlayer.Push > otherPlayer.Push && otherPlayer.Push == 0)
+                        {
+                            // current player pushes other player
+                            currentPlayer.HandleCollision(currentPlayer, otherPlayer, map, Players);
+                    
+                            // Record collision data for both players
+                            _currentTurnCollisions[currentPlayer.Id] = ("pusher", otherPlayer.Id, 
+                                new Dictionary<int, int> {{otherPlayer.X, otherPlayer.Y}});
+                            _currentTurnCollisions[otherPlayer.Id] = ("pushed", currentPlayer.Id, 
+                                new Dictionary<int, int> {{otherPlayer.X, otherPlayer.Y}});
+                        }
+                        
+                        else if (otherPlayer.Push > currentPlayer.Push && currentPlayer.Push == 0)
+                        {
+                            // other player has push priority
+                            otherPlayer.HandleCollision(otherPlayer, currentPlayer, map, Players);
+                            // Record collision data for both players
+                            _currentTurnCollisions[otherPlayer.Id] = ("pusher", currentPlayer.Id, 
+                                new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}});
+                            _currentTurnCollisions[currentPlayer.Id] = ("pushed", otherPlayer.Id, 
+                                new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}});
+                        }
+
+                        // Equal push - move both back to original positions
+                        currentPlayer.X = currentPlayer.XOld;
+                        currentPlayer.Y = currentPlayer.YOld;
+                        otherPlayer.X = otherPlayer.XOld;
+                        otherPlayer.Y = otherPlayer.YOld;
+                        
+                        // Record stalemate collision
+                        _currentTurnCollisions[currentPlayer.Id] = ("stalemate", otherPlayer.Id, 
+                            new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}});
+                        _currentTurnCollisions[otherPlayer.Id] = ("stalemate", currentPlayer.Id, 
+                            new Dictionary<int, int> {{otherPlayer.X, otherPlayer.Y}});
+
+                        // mark this collision as processed
+                        processedCollisions.Add((currentPlayer.Id, otherPlayer.Id));
                     }
                 }
             }
+        }
+
+
+        public bool CheckGameEnd()
+        {
+            if (Players.Count <= 1)
+            {
+                return true;
+            }
+
+            return false;
         }
         
         
@@ -391,7 +480,6 @@ namespace tiz_teh_final_csharp_project
                     foreach (var player in Players)
                     {
                         player.hit = 0;
-                        player.trigger = 0;
                     }
                     
                     Dictionary<int, char> turnInputs = _roundInputs.GetOrAdd(turn, new Dictionary<int, char>());
@@ -438,11 +526,16 @@ namespace tiz_teh_final_csharp_project
             else if (input == 'e')
             {
                 player.RotateRight();
+
             }
             else if (input == 'd')
             {
-                player.Shoot(carte, Players);
-                player.trigger = 1;
+                var shotResults = player.Shoot(carte, Players);
+                if (shotResults.Count > 0)
+                {
+                    _currentTurnShots[player.Id] = shotResults;
+                    
+                }
             }
             else if (input == ' ')
             {

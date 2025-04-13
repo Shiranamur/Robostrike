@@ -69,10 +69,8 @@ public class GameEndpoints : IEndpointMapper
 
             try
             { 
-                // todo : find the way to return the good turn to the user
-                // todo : create the class or dataformat to return to the user from this route
-                // returns the initial statue of the game for filer
-                return Results.Ok(new { Status = new { game_id = gameId, game_state = game.GetInitialState() } });
+                // returns the gamestate
+                return Results.Ok(new { Status = new { Round = game.GetCurrentRoundState() } });
             }
             catch (Exception ex)
             {
