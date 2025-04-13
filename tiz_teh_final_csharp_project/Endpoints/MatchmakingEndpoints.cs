@@ -15,11 +15,18 @@ public class MatchmakingEndpoints : IEndpointMapper
 {
     public void Endpoints(WebApplication app)
     {
-        app.MapGet("/api/matchmaking/join", (HttpRequest request, QueueManager queueManager) =>
+        app.MapGet("/api/matchmaking/join", (HttpRequest request, QueueManager queueManager, GameManager gameManager) =>
             {
                 var context = request.HttpContext;
                 if (context.Items.TryGetValue("UserId", out var userIdObj) && userIdObj is string userIdStr && int.TryParse(userIdStr, out var userId))
                 {
+                    string? gameId = gameManager.GetPlayerGameId(userId);
+
+                    if (gameId != null)
+                    {
+                        Game game = gameManager.GetGame(gameId);
+                        return Results.Ok(new { Status = game.GetCurrentRoundState() });
+                    }
                     if (queueManager.EnqueuePlayer(userId)) // returns true if player added to the queue successfully
                     {
                         Console.WriteLine($"[Debug] Player {userId} joined");
@@ -69,17 +76,6 @@ public class MatchmakingEndpoints : IEndpointMapper
             if (context.Items.TryGetValue("UserId", out var userIdObj) && userIdObj is string userIdStr &&
                 int.TryParse(userIdStr, out var userId) && ( queueManager.GetQueuedPlayerIds().Contains(userId) || gameManager.IsInPendingNotifications(userId)))
             {
-                string? gameId = gameManager.GetPlayerGameId(userId);
-                Game? game = gameManager.GetGame(gameId);
-                
-                // searches if player if player is in a game and not in pending notifications
-                // else return the game id (expects to request status in another api route)
-
-                if (gameId != null && game != null && !gameManager.IsInPendingNotifications(userId))
-                {
-                    return Results.Ok(new { Status = new { game_id = gameId, Map = game.map } });
-                }
-
                 var tcs = new TaskCompletionSource<object>();
                 var cancellationToken = context.RequestAborted;
 
@@ -93,8 +89,7 @@ public class MatchmakingEndpoints : IEndpointMapper
                     Console.WriteLine($"[Debug] Update callback triggered for user Matchmaking API {userId} with status: {status}");
                     tcs.TrySetResult(new { Status = status });
                 });
-
-
+                
                 try
                 {
                     // Wait for the status update or timeout
