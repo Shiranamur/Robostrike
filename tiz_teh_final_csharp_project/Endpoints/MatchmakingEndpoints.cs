@@ -37,6 +37,7 @@ public class MatchmakingEndpoints : IEndpointMapper
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status500InternalServerError)
         .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status409Conflict)
         .WithOpenApi(ConfigureOpenApiOperation);
         
 
@@ -68,6 +69,17 @@ public class MatchmakingEndpoints : IEndpointMapper
             if (context.Items.TryGetValue("UserId", out var userIdObj) && userIdObj is string userIdStr &&
                 int.TryParse(userIdStr, out var userId) && ( queueManager.GetQueuedPlayerIds().Contains(userId) || gameManager.IsInPendingNotifications(userId)))
             {
+                string? gameId = gameManager.GetPlayerGameId(userId);
+                Game? game = gameManager.GetGame(gameId);
+                
+                // searches if player if player is in a game and not in pending notifications
+                // else return the game id (expects to request status in another api route)
+
+                if (gameId != null && game != null && !gameManager.IsInPendingNotifications(userId))
+                {
+                    return Results.Ok(new { Status = new { game_id = gameId, Map = game.map } });
+                }
+
                 var tcs = new TaskCompletionSource<object>();
                 var cancellationToken = context.RequestAborted;
 
@@ -93,12 +105,9 @@ public class MatchmakingEndpoints : IEndpointMapper
                         Console.WriteLine($"[Debug] Player {userId} joined game {tcs.Task.Result}");
                         return Results.Ok(tcs.Task.Result);
                     }
-                    else
-                    {
-                        queueManager.DequeuePlayer(userId); // dequeue after delay passed
-                        Console.WriteLine($"[Debug] Player {userId} is timed out");
-                        return Results.Ok(new { Status = "No updates" });
-                    }
+                    queueManager.DequeuePlayer(userId); // dequeue after delay passed
+                    Console.WriteLine($"[Debug] Player {userId} is timed out");
+                    return Results.Ok(new { Status = "No updates" });
                 }
                 catch (TaskCanceledException)
                 {
@@ -106,7 +115,7 @@ public class MatchmakingEndpoints : IEndpointMapper
                     return Results.Ok(new { Status = "Request canceled" });
                 }
             }
-            Console.WriteLine($"[debug] User not in the matchmaking list");
+            Console.WriteLine("[debug] User not in the matchmaking list");
             return Results.Unauthorized();
         })
         .WithName("MatchmakingStatus")

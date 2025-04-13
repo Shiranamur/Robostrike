@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebRobotStrike", "WebRobotS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tiz_teh_final_csharp_project", "tiz_teh_final_csharp_project\tiz_teh_final_csharp_project.csproj", "{B8A3BD6E-876A-4A63-B905-40E601F40D75}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestFinalCSharpProject", "TestFinalCSharpProject\TestFinalCSharpProject.csproj", "{F56D39D0-D5B5-460A-A6FC-85CF68748A7E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B8A3BD6E-876A-4A63-B905-40E601F40D75}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8A3BD6E-876A-4A63-B905-40E601F40D75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8A3BD6E-876A-4A63-B905-40E601F40D75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F56D39D0-D5B5-460A-A6FC-85CF68748A7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F56D39D0-D5B5-460A-A6FC-85CF68748A7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F56D39D0-D5B5-460A-A6FC-85CF68748A7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F56D39D0-D5B5-460A-A6FC-85CF68748A7E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

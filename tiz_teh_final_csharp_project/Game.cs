@@ -3,22 +3,42 @@ using System.Collections.Concurrent;
 
 namespace tiz_teh_final_csharp_project
 {
-    /// <summary>
-    /// Représente un tour de jeu.
-    /// Appelé avec Turn(int turnNumber, List<Player> players) et retourne un objet Turn contenant le numéro de tour et la liste des joueurs.
-    /// </summary>
-    public class Turn
+    public class GameStatusResponse
     {
-        public int TurnNumber { get; set; }
-        public List<Player> Players { get; set; }
-
-        public Turn(int turnNumber, List<Player> players)
-        {
-            this.TurnNumber = turnNumber;
-            Players = players;
-        }
+        public string GameId { get; set; }
+        public int CurrentRound { get; set; }
+        public RoundState RoundState { get; set; }
+        public bool GameOver { get; set; }
     }
 
+    public class RoundState
+    {
+        public int RoundNumber { get; set; }
+        public List<TurnState> Turns { get; set; } = new List<TurnState>();
+        public Map Map { get; set; }
+    }
+
+    public class TurnState
+    {
+        public int TurnNumber { get; set; }
+        public List<PlayerState> Players { get; set; } = new List<PlayerState>();
+    }
+
+    public class PlayerState
+    {
+        public int Id { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public char Direction { get; set; }
+        public int PreviousX { get; set; }
+        public int PreviousY { get; set; }
+        public int Events { get; set; }
+        // not yet used
+        public int Action { get; set; }
+        public int Health { get; set; }
+        public int Damage_Taken { get; set; }
+    }
+    
     /// <summary>
     /// Représente une partie de jeu.
     /// La classe Game charge la carte depuis un fichier JSON, initialise la liste des joueurs (enrichie avec leur position, direction, etc.),
@@ -30,24 +50,44 @@ namespace tiz_teh_final_csharp_project
         public List<Player> Players { get; set; }
         public string MatchId { get; set; }
 
-        private int currentRound = 0;
+        public int CurrentRound = 0;
+        
+        public bool GameOver = false;
+
+        private const int _maxRounds = 6;
+
+        private const int _maxTurns = 6;
 
         // Stocke les inputs des joueurs pour chaque round.
         // Key: numéro de round ; Value: dictionnaire associant l'id du joueur à son caractère d'entrée.
         private readonly ConcurrentDictionary<int, Dictionary<int, char>> _roundInputs = new();
+        
+        // Track which players have submitted inputs for the current round
+        private readonly ConcurrentDictionary<int, HashSet<int>> _submittedInputs = new();
+
 
         // Stocke un TaskCompletionSource pour chaque round afin d'attendre que tous les joueurs aient soumis leur input.
         private readonly ConcurrentDictionary<int, TaskCompletionSource<bool>> _roundInputCompletionSources = new();
 
+        // buffer list to contain turns for the round class
+        private List<TurnState> _currentRoundTurns = new List<TurnState>();
+        
+        private readonly Dictionary<int, RoundState> _completedRoundStates = new Dictionary<int, RoundState>();
+
+
+        
         /// <summary>
         /// Constructeur de la classe Game.
         /// Charge la carte à partir d'un fichier JSON et initialise la liste des joueurs.
-        /// Appelé avec Game(string mapFile, List<Player> players) et retourne une instance de Game initialisée.
+        /// Appelé avec Game(string mapFile, List(Player) players) et retourne une instance de Game initialisée.
         /// </summary>
         /// <param name="mapFile">Le chemin du fichier JSON contenant la carte.</param>
         /// <param name="players">La liste minimale des joueurs (avec uniquement leur identifiant, qui sera enrichi).</param>
-        public Game(string mapFile, List<Player> players)
+        /// <param name="matchId">Id du match crée par gameManager</param>
+        public Game(string mapFile, List<Player> players, string matchId)
         {
+            this.MatchId = matchId;
+            
             if (!File.Exists(mapFile))
             {
                 Console.WriteLine($"Game: Map file not found at {mapFile}");
@@ -57,19 +97,18 @@ namespace tiz_teh_final_csharp_project
             string json = File.ReadAllText(mapFile);
             map = JsonSerializer.Deserialize<Map>(json);
 
-            if (map != null)
+            if (map == null)
             {
-                Console.WriteLine($"Map initialized with Width: {map.Width}, Height: {map.Height}, Tiles: {map.tiles.Count}");
+                Console.WriteLine($"Game: Map file is empty at {mapFile}");
+                throw new ArgumentNullException(nameof(mapFile), "Could not deserialize map file");
             }
-            else
-            {
-                Console.WriteLine("Failed to deserialize map.");
-            }
+
+            Console.WriteLine($"Map initialized with Width: {map.Width}, Height: {map.Height}, Tiles: {map.tiles.Count}");
             
             if (players == null || players.Count == 0)
             {
                 Console.WriteLine("Game: Players list is null or empty.");
-                return;
+                throw new ArgumentNullException(nameof(players), "Players list is null or empty.");
             }
             
             Players = players;
@@ -80,11 +119,13 @@ namespace tiz_teh_final_csharp_project
             Console.WriteLine($"Game: Initialized with {Players.Count} players.");
         }
 
+
         /// <summary>
         /// Initialise les joueurs en leur assignant une position de départ, une direction par défaut et des inputs par défaut.
         /// Méthode de test qui répartit les joueurs en grille sur la carte.
         /// Appelée automatiquement lors de l'initialisation de la partie (void).
         /// </summary>
+        // TODO : add spawn support in here
         private void InitializePlayers()
         {
             int n = Players.Count;
@@ -98,12 +139,13 @@ namespace tiz_teh_final_csharp_project
                 int row = i / gridColumns;
                 int col = i % gridColumns;
 
-                Players[i].x = spacingX * (col + 1);
-                Players[i].y = spacingY * (row + 1);
-                Players[i].direction = 'S';  // Direction par défaut (Sud)
-                Players[i].inputs = string.Empty; // Les inputs seront reçus via l'API
+                Players[i].X = spacingX * (col + 1);
+                Players[i].Y = spacingY * (row + 1);
+                Players[i].Direction = 'S';  // Direction par défaut (Sud)
+                Players[i].Inputs = string.Empty; // Les inputs seront reçus via l'API
             }
         }
+        
         
         /// <summary>
         /// Retourne l'état initial de la partie.
@@ -119,133 +161,250 @@ namespace tiz_teh_final_csharp_project
                 map = this.map,
                 players = this.Players.Select(p => new 
                 {
-                    id = p.id,
-                    x = p.x,
-                    y = p.y,
-                    direction = p.direction,
-                    curInput = p.curInput,
+                    id = p.Id,
+                    x = p.X,
+                    y = p.Y,
+                    direction = p.Direction,
+                    curInput = p.CurInput,
                 }).ToList()
             };
         }
 
+        
         /// <summary>
-        /// Soumet une entrée de joueur pour un round donné.
-        /// Appelée avec SubmitPlayerInput(int playerId, char input) et retourne void.
+        /// Soumet une list d'entrées de joueur pour un round donné.
+        /// Appelée avec SubmitPlayerInput(int playerId, string input) et retourne void.
         /// Elle enregistre l'input du joueur et, si tous les inputs sont reçus, déclenche la complétion de la tâche d'attente.
-        /// est trigger par : POST /api/game/{matchId}/round
+        /// est trigger par : PUT /api/game/{matchId}/inputs
         /// </summary>
-        /// <param name="roundNumber">Le numéro du round en cours.</param>
         /// <param name="playerId">L'identifiant du joueur.</param>
-        /// <param name="input">L'entrée saisie par le joueur.</param>
-        public void SubmitPlayerInput(int playerId, char input)
+        /// <param name="inputs">L'entrée saisie par le joueur.</param>
+        public void SubmitPlayerInput(int playerId, string inputs)
         {
-            // Récupère ou crée le dictionnaire des inputs pour le round.
-            var inputs = _roundInputs.GetOrAdd(currentRound, new Dictionary<int, char>());
-            lock (inputs)
+            // Store each turn's input for this player
+            for (int turn = 0; turn < _maxTurns; turn++)
             {
-                inputs[playerId] = input;
-                // Vérifie si les inputs de tous les joueurs ont été reçus.
-                if (inputs.Count >= Players.Count)
+                // Get or create the input dictionary for this turn
+                var turnInputs = _roundInputs.GetOrAdd(turn, _ => new Dictionary<int, char>());
+        
+                // Lock only the specific turn's dictionary for thread safety
+                lock (turnInputs)
                 {
-                    // Signale que la collecte d'inputs est terminée.
-                    if (_roundInputCompletionSources.TryGetValue(currentRound, out var tcs))
+                    turnInputs[playerId] = turn < inputs.Length ? inputs[turn] : ' ';
+                }
+            }
+
+            // Add player to the set of players who have submitted inputs for this round
+            _submittedInputs.GetOrAdd(CurrentRound, _ => new HashSet<int>()).Add(playerId);
+
+            // Check if all players have submitted inputs for current round
+            CheckRoundInputsCompletion();
+        }
+
+        
+        /// <summary>
+        /// Checks if all players have submitted inputs for the current round.
+        /// If all players have submitted, signals the corresponding TaskCompletionSource to continue processing.
+        /// </summary>
+        private void CheckRoundInputsCompletion()
+        {
+            // Get the set of players who submitted for this round
+            if (_submittedInputs.TryGetValue(CurrentRound, out var submittedPlayers))
+            {
+                lock (submittedPlayers)
+                {
+                    // Check if all players have submitted
+                    if (submittedPlayers.Count >= Players.Count &&
+                        _roundInputCompletionSources.TryGetValue(CurrentRound, out var tcs))
                     {
+                        // Set the result and complete the waiting task
                         tcs.TrySetResult(true);
                     }
                 }
             }
         }
 
+
         /// <summary>
-        /// Attend de façon asynchrone que tous les joueurs aient soumis leurs inputs pour un round donné.
-        /// Appelée avec WaitForRoundInputsAsync(int roundNumber) et retourne une Task qui se complète quand tous les inputs sont reçus.
+        /// Attend de façon asynchrone que tous les joueurs aient soumis leurs inputs pour un round.
+        /// Appelée avec WaitForRoundInputsAsync() et retourne une Task qui se complète quand tous les inputs sont reçus.
+        /// Implémente également une fonction de timeout pour ne pas bloquer le jeu.
         /// </summary>
-        /// <param name="roundNumber">Le numéro du round.</param>
         private async Task WaitForRoundInputsAsync()
         {
             var tcs = new TaskCompletionSource<bool>();
-            _roundInputCompletionSources[currentRound] = tcs;
-            
-            // Vous pouvez ajouter un timeout ici si nécessaire.
-            await tcs.Task.ConfigureAwait(false);
-        }
+            _roundInputCompletionSources[CurrentRound] = tcs;
 
-        /// <summary>
-        /// Traite un round unique en attendant la soumission de tous les inputs puis en appliquant les actions des joueurs.
-        /// Appelée avec ProcessRoundAsync(int roundNumber) et retourne une Task.
-        /// </summary>
-        /// <param name="roundNumber">Le numéro du round à traiter.</param>
-        private async Task ProcessRoundAsync()
-        {
-            // Attend que tous les joueurs aient soumis leur input pour ce round.
-            await WaitForRoundInputsAsync();
-
-            // Récupère les inputs pour le round.
-            if (!_roundInputs.TryGetValue(currentRound, out var inputs))
+            // Track which players have and haven't submitted
+            var pendingPlayers = new HashSet<int>(Players.Select(p => p.Id));
+    
+            // Check if any players have already submitted
+            if (_submittedInputs.TryGetValue(CurrentRound, out var submittedPlayers))
             {
-                Console.WriteLine($"No inputs received for round {currentRound}");
+                lock (submittedPlayers)
+                {
+                    foreach (var id in submittedPlayers)
+                        pendingPlayers.Remove(id);
+                }
+            }
+
+            // If all have submitted, complete immediately
+            if (pendingPlayers.Count == 0)
+            {
+                tcs.TrySetResult(true);
                 return;
             }
 
-            // Traite l'input de chaque joueur.
-            foreach (var player in Players)
-            {
-                if (inputs.TryGetValue(player.id, out char input))
+            // Add timeout
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            cts.Token.Register(() => {
+                Console.WriteLine($"Round {CurrentRound} timed out waiting for players: {string.Join(", ", pendingPlayers)}");
+        
+                // For players who didn't submit, use a default input
+                foreach (var playerId in pendingPlayers)
                 {
-                    // Traite l'input via la fonction ReadInput.
-                    ReadInput(player, input, map);
-                    player.curInput = input;
+                    FillDefaultInputs(playerId);
                 }
-                else
+        
+                tcs.TrySetResult(true);
+            });
+
+            await tcs.Task.ConfigureAwait(false);
+        }
+        
+        
+        /// <summary>
+        /// Fills in default inputs (space character) for a player who hasn't submitted inputs before the timeout.
+        /// Used when a player fails to submit inputs within the allotted time.
+        /// </summary>
+        /// <param name="playerId">The ID of the player who needs default inputs</param>
+        private void FillDefaultInputs(int playerId)
+        {
+            // Fill with space character (no action) for all turns
+            for (int turn = 0; turn < _maxTurns; turn++)
+            {
+                var turnInputs = _roundInputs.GetOrAdd(turn, _ => new Dictionary<int, char>());
+                lock (turnInputs)
                 {
-                    Console.WriteLine($"Player {player.id} did not submit input for round {currentRound}.");
+                    // Default input is space
+                    turnInputs.TryAdd(playerId, ' ');
                 }
             }
-            
-            // Gère les collisions entre joueurs.
-            foreach (var qPlayer in Players)
+        }
+        
+        // Add this method to get round state
+        // Update GetCurrentRoundState to return the most recent completed round
+        public RoundState GetCurrentRoundState()
+        {
+            // If there's a completed round, return it
+            if (_completedRoundStates.TryGetValue(CurrentRound > 0 ? CurrentRound - 1 : 0, out var completedState))
             {
-                foreach (var wPlayer in Players)
+                return completedState;
+            }
+        
+            // Otherwise return current in-progress state
+            return new RoundState
+            {
+                RoundNumber = CurrentRound,
+                Turns = _currentRoundTurns,
+                Map = this.map
+            };
+        }
+        
+        
+        // Add method to get specific round state
+        public RoundState GetRoundState(int roundNumber)
+        {
+            if (_completedRoundStates.TryGetValue(roundNumber, out var state))
+            {
+                return state;
+            }
+        
+            return null;
+        }
+        
+        
+        public void RecordTurnState(int currentTurn)
+        {
+            var turnState = new TurnState
+            {
+                TurnNumber = currentTurn,
+                Players = Players.Select(p => new PlayerState
                 {
-                    if ((wPlayer.x == qPlayer.x || wPlayer.x == qPlayer.xA) &&
-                        (wPlayer.y == qPlayer.y || wPlayer.y == qPlayer.yA) &&
-                        wPlayer.id != qPlayer.id)
+                    Id = p.Id,
+                    X = p.X,
+                    Y = p.Y,
+                    Direction = p.Direction,
+                    PreviousX = p.XOld,
+                    PreviousY = p.YOld,
+                    Events = p.Events
+                }).ToList()
+            };
+            _currentRoundTurns.Add(turnState);
+        }
+        
+        
+        /// <summary>
+        /// Processes a single turn by applying player inputs and resolving collisions.
+        /// Updates player positions based on their inputs and handles any resulting collisions between players.
+        /// </summary>
+        /// <param name="turnInputs">Dictionary mapping player IDs to their input characters for this turn</param>
+        private void ProcessTurn(Dictionary<int, char> turnInputs)
+        {
+            foreach (var player in Players)
+            {
+                player.XOld = player.X;
+                player.YOld = player.Y;
+                ReadInput(player, turnInputs.GetValueOrDefault(player.Id, ' '), map);
+            }
+            foreach(var qPlayer in Players)
+            {
+                foreach(var wPlayer in Players)
+                {
+                    if (wPlayer.X == qPlayer.X && wPlayer.Y == qPlayer.Y && wPlayer.Id != qPlayer.Id)
                     {
-                        qPlayer.HandleCollision(wPlayer, qPlayer, map);
-                        qPlayer.events = 1;
-                        wPlayer.events = 1;
+                        qPlayer.HandleCollision(wPlayer,qPlayer, map, Players);
                     }
                 }
             }
         }
         
-        /// <summary>
-        /// Exécute de manière asynchrone la boucle de jeu qui gère plusieurs rounds.
-        /// Appelée avec GameLoopAsync() et retourne une Task.
-        /// Pour chaque round, elle attend la réception des inputs, traite le round, affiche l'état, puis attend un délai avant de passer au suivant.
-        /// </summary>
-        public async Task GameLoopAsync()
-        {
-            for (int j = 0; j < 6; j++)
-            {
-                await ProcessRoundAsync();
-                
-                Turn curTurn = new Turn(j, Players);
-                string roundStateJson = JsonSerializer.Serialize(curTurn);
-                Console.WriteLine(roundStateJson);
-                
-                await Task.Delay(6000);
-            }
-        }
         
         /// <summary>
-        /// Démarre la partie de jeu de manière asynchrone.
-        /// Appelée avec StartGameAsync(), elle vérifie d'abord que la carte et la liste des joueurs sont valides, puis lance la boucle de jeu.
-        /// Retourne une Task.
+        /// Starts and runs the game asynchronously until completion.
+        /// Processes rounds sequentially, waiting for player inputs (with timeout) before processing each round.
         /// </summary>
-        public async Task StartGameAsync()
+        /// <returns>A task that completes with true when the game is finished</returns>
+        public async Task<bool> StartGameAsync()
         {
-            await GameLoopAsync();
+            while (!GameOver && CurrentRound < _maxRounds) // continue game while not finished
+            {
+                _currentRoundTurns = new List<TurnState>(); // Create new instead of clearing
+
+                // wait inputs with timout
+                await WaitForRoundInputsAsync();
+               
+                // process turns inside the round
+                for (int turn = 0; turn < _maxTurns; turn++)
+                {
+                    // get the inputs for the turn
+                    Dictionary<int, char> turnInputs = _roundInputs.GetOrAdd(turn, new Dictionary<int, char>());
+                    ProcessTurn(turnInputs); // process
+                    RecordTurnState(turn);
+                }
+                
+
+                // Save the completed round state
+                _completedRoundStates[CurrentRound] = new RoundState
+                {
+                    RoundNumber = CurrentRound,
+                    Turns = new List<TurnState>(_currentRoundTurns), // Create a copy
+                    Map = this.map
+                };
+                
+                CurrentRound++;                
+            }
+            return true; // game is finished
         }
         
         /// <summary>
@@ -254,25 +413,29 @@ namespace tiz_teh_final_csharp_project
         /// Selon la valeur du caractère, elle effectue une rotation à gauche, un déplacement vers l'avant, un déplacement vers l'arrière ou une rotation à droite.
         /// </summary>
         /// <param name="player">Le joueur dont l'input est à traiter.</param>
-        /// <param name="i">Le caractère d'entrée (par exemple 'a', 'z', 's', 'e').</param>
+        /// <param name="input">Le caractère d'entrée (par exemple 'a', 'z', 's', 'e').</param>
         /// <param name="carte">La carte sur laquelle se déroule l'action.</param>
-        public void ReadInput(Player player, char i, Map carte)
+        private static void ReadInput(Player player, char input, Map carte)
         {
-            if (i == 'a')
+            if (input == 'a')
             {
                 player.RotateLeft();
             }
-            else if (i == 'z')
+            else if (input == 'z')
             {
                 player.MoveForward(carte);
             }
-            else if (i == 's')
+            else if (input == 's')
             {
                 player.MoveBackward(carte);
             }
-            else if (i == 'e')
+            else if (input == 'e')
             {
                 player.RotateRight();
+            }
+            else if (input == ' ')
+            {
+                Console.WriteLine("Someone didn't submit their input...");
             }
             else
             {

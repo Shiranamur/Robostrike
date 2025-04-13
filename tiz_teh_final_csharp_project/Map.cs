@@ -18,7 +18,7 @@ namespace tiz_teh_final_csharp_project
             this.tiles = tiles;
         }
 
-        public bool isValidMove(int x, int y)
+        public bool IsValidMove(int x, int y)
         {
             if (tiles == null)
             {
@@ -26,7 +26,7 @@ namespace tiz_teh_final_csharp_project
                 return false;
             }
             Console.WriteLine("x " + Width + "y " + Height + "x " + x + "y " + y);
-            bool isInBounds = x >= 0 && x <= Width && y >= 0 && y <= Height;
+            bool isInBounds = x >= 0 && x < Width && y >= 0 && y < Height;
             Console.WriteLine($"Map: Checking move to ({x}, {y}). Is within bounds? {isInBounds}");
 
             if (!isInBounds)
@@ -47,7 +47,7 @@ namespace tiz_teh_final_csharp_project
             return isValid;
         }
         
-        public void printMap(List<Player> players)
+        public void PrintMap(List<Player> players)
         {
 
 
@@ -56,9 +56,9 @@ namespace tiz_teh_final_csharp_project
                 bool l = false;
                 foreach(Player j in players)
                 {
-                    if (j.x == i.X && j.y == i.Y)
+                    if (j.X == i.X && j.Y == i.Y)
                     {
-                        Console.Write(j.direction);
+                        Console.Write(j.Direction);
                         l = true;
                         break;
                     }
