@@ -7,17 +7,27 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<h3>Login</h3>
-<div>
-    <label>Username:</label>
-    <input @bind="username" />
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+        <h3 class="text-center mb-4">Login</h3>
 
-    <label>Password:</label>
-    <input @bind="password" type="password" />
+        <div class="form-floating mb-3">
+            <input @bind="username" class="form-control" id="username" placeholder="Username" />
+            <label for="username">Username</label>
+        </div>
 
-    <button @onclick="HandleLogin">Login</button>
+        <div class="form-floating mb-3">
+            <input type="password" @bind="password" class="form-control" id="password" placeholder="Password" />
+            <label for="password">Password</label>
+        </div>
 
-    <div style="color:red">@errorMessage</div>
+        <button class="btn btn-primary w-100" @onclick="HandleLogin">Sing in</button>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">@errorMessage</div>
+        }
+    </div>
 </div>
 
 

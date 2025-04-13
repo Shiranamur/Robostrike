@@ -8,8 +8,8 @@
 
 <div class="hub-container">
     <div class="hub-card">
-        <h1>RoboStrike Hub</h1>
-        <p>Find a game and jump straight in!</p>
+        <h1 class="mb-3">RoboStrike Hub</h1>
+        <p class="mb-4">Find a game and jump straight in!</p>
         @if (!isInQueue)
         {
             <button class="join-button" @onclick="JoinMatchmaking">Join Matchmaking</button>
@@ -49,7 +49,7 @@
         try
         {
             await JS.InvokeVoidAsync("console.log", "[request] entering try catch ");
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5181/api/matchmaking/join");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5000/api/matchmaking/join");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             statusMessage += "\n[Debug] GET /api/matchmaking/join with Bearer token...";
@@ -101,7 +101,7 @@ private async Task PollMatchStatus(CancellationToken token)
             }
 
             // 2. Prepare the request
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5181/api/matchmaking/status");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5000/api/matchmaking/status");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", localToken);
 
             statusMessage += "\n[Debug] GET /api/matchmaking/status with Bearer token...";
@@ -225,7 +225,7 @@ private async Task PollMatchStatus(CancellationToken token)
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5181/api/matchmaking/leave");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5000/api/matchmaking/leave");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var resp = await Http.SendAsync(request);

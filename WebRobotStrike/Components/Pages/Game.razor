@@ -5,12 +5,11 @@
 <h3>Match ID: @gameData?.matchId</h3>
 
 <div id="game-container">
-    <!-- Map container; note that CSS should set position: relative for layering -->
-    <div id="map" style="position: relative; width: 480px; height: 480px; border: 1px solid #ccc;"></div>
+    <!-- Map container -->
+    <div id="map"></div>
 
     <!-- HUD area -->
     <div id="hud">
-        <!-- Textarea for displaying debug command sequence -->
         <textarea id="hudTextArea" rows="4" cols="50" placeholder="Enter commands..."></textarea>
         <div id="hudButtons">
             <button id="rotateLeftBtn">Rotate Left</button>
@@ -23,6 +22,7 @@
         </div>
     </div>
 </div>
+
 
 @code {
     public class Tile
