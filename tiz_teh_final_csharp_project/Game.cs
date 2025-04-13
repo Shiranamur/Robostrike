@@ -29,7 +29,7 @@ namespace tiz_teh_final_csharp_project
                 Console.WriteLine($"Game: Map file not found at {mapFile}");
                 return;
             }
-            
+
             string json = File.ReadAllText(mapFile);
             map = JsonSerializer.Deserialize<Map>(json);
 
@@ -42,15 +42,15 @@ namespace tiz_teh_final_csharp_project
                 Console.WriteLine("Failed to deserialize map.");
             }
 
-            
+
             if (players == null)
             {
                 Console.WriteLine("Game: Players list is null.");
                 return;
             }
-            
+
             Players = players;
-            
+
             Console.WriteLine($"Game: Initialized with {Players.Count} players.");
         }
 
@@ -71,29 +71,36 @@ namespace tiz_teh_final_csharp_project
             GameLoop();
 
         }
-        public void ReadInput(Player player, char i, Map carte)
+        public void ReadInput(Player player, char i, Map carte, List<Player> Players)
         {
-            if (i == 'a')
+            if (player.health > 0)
             {
+                if (i == 'a')
+                {
                     player.RotateLeft();
-            }
-            else if (i == 'z')
-            {
+                }
+                else if (i == 'z')
+                {
                     player.MoveForward(carte);
-            }
-            else if (i == 's')
-            {
+                }
+                else if (i == 's')
+                {
                     player.MoveBackward(carte);
-            }
-            else if (i == 'e')
-            {
+                }
+                else if (i == 'e')
+                {
                     player.RotateRight();
-            }
-            else
-            {
+                }
+                else if (i == 'd')
+                {
+                    player.Shoot(carte, Players);
+                    player.trigger = 1;
+                }
+                else
+                {
                     Console.WriteLine("Invalid input");
+                }
             }
-            
         }
         public void GameLoop()
         {
@@ -109,19 +116,20 @@ namespace tiz_teh_final_csharp_project
                 }
                 player.inputs = player.EnterInput(player);
             }
+            //Turn[5] round;
             for (int j = 0; j < 6; j++)
             {
                 foreach (var player in Players)
                 {
-                    ReadInput(player, player.inputs[j], map);
+                    ReadInput(player, player.inputs[j], map, Players);
                 }
-                foreach(var qPlayer in Players)
+                foreach (var qPlayer in Players)
                 {
-                    foreach(var wPlayer in Players)
+                    foreach (var wPlayer in Players)
                     {
                         if (wPlayer.x == qPlayer.x && wPlayer.y == qPlayer.y && wPlayer.id != qPlayer.id)
                         {
-                            qPlayer.HandleCollision(wPlayer,qPlayer, map, Players);
+                            qPlayer.HandleCollision(wPlayer, qPlayer, map, Players);
                         }
                     }
                 }

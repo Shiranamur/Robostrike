@@ -56,7 +56,7 @@ namespace tiz_teh_final_csharp_project
                 bool l = false;
                 foreach(Player j in players)
                 {
-                    if (j.x == i.X && j.y == i.Y)
+                    if (j.x == i.X && j.y == i.Y && j.health > 0)
                     {
                         Console.Write(j.direction);
                         l = true;

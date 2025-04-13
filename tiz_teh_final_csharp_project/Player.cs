@@ -1,4 +1,6 @@
 using System;
+using System.Dynamic;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace tiz_teh_final_csharp_project
@@ -18,7 +20,9 @@ namespace tiz_teh_final_csharp_project
         public int events { get; set; }
         public int push = 0;
         public char pushDirection;
-
+        public int health { get; set; }
+        public int hit { get; set; }
+        public int trigger { get; set; } 
         public void MoveForward(Map carte)
         {
             int newX = x;
@@ -199,6 +203,94 @@ namespace tiz_teh_final_csharp_project
             return i;
         }
 
+        public int Shoot(Map carte, List<Player> players)
+        {
+            if (direction == 'S')
+            {
+                int i = y;
+                i += 1;
+                while (i < carte.Height)
+                {
+                    if (CheckTile(x, i, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.x == x && player.y == i)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i += 1;
+                }
+            }
+            else if (direction == 'N')
+            {
+                int i = y;
+                i -= 1;
+                while (i >= 0)
+                {
+                    if (CheckTile(x, i, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.x == x && player.y == i)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i -= 1;
+                }
+            }
+            else if (direction == 'E')
+            {
+                int i = x;
+                i += 1;
+                while (i >= 0)
+                {
+                    if (CheckTile(i, y, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.x == i && player.y == y)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i += 1;
+                }
+            }
+            else if (direction == 'W')
+            {
+                int i = x;
+                i -= 1;
+                while (i >= 0)
+                {
+                    if (CheckTile(i, y, players) > 0)
+                    {
+                        foreach(var player in players)
+                        {
+                            if (player.x == i && player.y == y)
+                            {
+                                player.health -= 1;
+                                player.hit += 1;
+                                return 1;
+                            }
+                        }
+                    }
+                    i -= 1;
+                }
+            }
+            return -1;
+        }
         public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
         {
             if (player1.push > player2.push && player2.push == 0)
