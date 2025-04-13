@@ -388,6 +388,12 @@ namespace tiz_teh_final_csharp_project
                 for (int turn = 0; turn < _maxTurns; turn++)
                 {
                     // get the inputs for the turn
+                    foreach (var player in Players)
+                    {
+                        player.hit = 0;
+                        player.trigger = 0;
+                    }
+                    
                     Dictionary<int, char> turnInputs = _roundInputs.GetOrAdd(turn, new Dictionary<int, char>());
                     ProcessTurn(turnInputs); // process
                     RecordTurnState(turn);
@@ -415,7 +421,7 @@ namespace tiz_teh_final_csharp_project
         /// <param name="player">Le joueur dont l'input est à traiter.</param>
         /// <param name="input">Le caractère d'entrée (par exemple 'a', 'z', 's', 'e').</param>
         /// <param name="carte">La carte sur laquelle se déroule l'action.</param>
-        private static void ReadInput(Player player, char input, Map carte)
+        private void ReadInput(Player player, char input, Map carte)
         {
             if (input == 'a')
             {
@@ -432,6 +438,11 @@ namespace tiz_teh_final_csharp_project
             else if (input == 'e')
             {
                 player.RotateRight();
+            }
+            else if (input == 'd')
+            {
+                player.Shoot(carte, Players);
+                player.trigger = 1;
             }
             else if (input == ' ')
             {
