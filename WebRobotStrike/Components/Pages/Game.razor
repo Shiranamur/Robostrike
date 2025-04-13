@@ -1,5 +1,9 @@
 @page "/game"
+@using System.Text
+@using System.Text.Json
 @inject IJSRuntime JS
+@inject HttpClient Http
+@inject NavigationManager Nav
 @rendermode InteractiveServer
 
 <h3>Match ID: @gameData?.matchId</h3>
@@ -8,20 +12,18 @@
     <!-- Map container -->
     <div id="map"></div>
 
-    <!-- HUD area -->
-    <div id="hud">
-        <textarea id="hudTextArea" rows="4" cols="50" placeholder="Enter commands..."></textarea>
-        <div id="hudButtons">
-            <button id="rotateLeftBtn">Rotate Left</button>
-            <button id="rotateRightBtn">Rotate Right</button>
-            <button id="forwardBtn">Forward</button>
-            <button id="dashBtn">Dash</button>
-            <button id="shootBtn">Shoot</button>
-            <button id="deleteBtn">Delete</button>
-            <button id="sendBtn">Send</button>
-        </div>
-        <div id="flashMessage" class="flash">Input limit reached!</div>
+    <textarea id="hudTextArea" @bind="PlayerCommands" maxlength="6"></textarea>
+    <div id="hudButtons">
+        <button id="rotateLeftBtn">Rotate Left</button>
+        <button id="rotateRightBtn">Rotate Right</button>
+        <button id="forwardBtn">Forward</button>
+        <button id="reverseBtn">Reverse</button>
+        <button id="shootBtn">Shoot</button>
+        <button id="deleteBtn">Delete</button>
+        <button id="sendBtn" @onclick="SendPlayerInput">Send</button>
     </div>
+    <div id="flashMessage" class="flash">Input limit reached!</div>
+
 </div>
 
 
@@ -55,6 +57,49 @@
         public string direction { get; set; }
         public string curInput { get; set; }
         // Additional properties needed
+    }
+
+    private string PlayerCommands { get; set; } = "";
+    
+    private async Task SendPlayerInput()
+    {
+        var gameId = gameData?.matchId;
+        var sessionToken = await JS.InvokeAsync<string>("localStorage.getItem", "sessionToken");
+
+        if (string.IsNullOrEmpty(gameId) || string.IsNullOrEmpty(sessionToken))
+        {
+            Console.WriteLine("Missing game ID or session token.");
+            return;
+        }
+
+        // Fetch value from textarea manually to override stale `PlayerCommands`
+        PlayerCommands = await JS.InvokeAsync<string>("eval", "document.getElementById('hudTextArea').value");
+        Console.WriteLine($"playerCommands : {PlayerCommands}");
+
+        string url = $"http://localhost:5181/api/game/{gameId}/inputs";
+        var request = new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(PlayerCommands), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+
+        try
+        {
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Server response: " + await response.Content.ReadAsStringAsync());
+                PlayerCommands = "";
+            }
+            else
+            {
+                Console.WriteLine("Failed to send input: " + response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Exception sending input: " + ex.Message);
+        }
     }
 
     private GameData gameData;

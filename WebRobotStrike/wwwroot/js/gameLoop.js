@@ -6,7 +6,7 @@
     }
     renderMap(gameData.map);
     renderPlayers(gameData.players);
-    setupHud();
+    setupHud(gameData.matchId);
 }
 
 function renderMap(mapData) {
@@ -35,7 +35,6 @@ function renderMap(mapData) {
 
     // Create and add each tile element.
     mapData.tiles.forEach(tile => {
-        console.log("Tile object:", tile);
 
         const tileDiv = document.createElement("div");
         tileDiv.classList.add("cell");
@@ -44,7 +43,6 @@ function renderMap(mapData) {
         tileDiv.style.border = "1px solid #ddd";
         
         const tileType = tile.type;
-        console.log("Tile type:", tileType);
         tileDiv.style.backgroundImage = `url('/images/Tiles/${tileType}.png')`;
         tileDiv.style.backgroundSize = "cover";
         tileDiv.style.backgroundPosition = "center";
@@ -82,60 +80,66 @@ function renderPlayers(players) {
 }
 
 
-function setupHud(){
+function setupHud() {
     const hudTextArea = document.getElementById("hudTextArea");
     if (!hudTextArea) return;
 
+    // Enforce max length
     hudTextArea.maxLength = 6;
+
+    // Helper: Append a character if there's room, else trigger flash message.
     function addChar(char) {
         if (hudTextArea.value.length < 6) {
             hudTextArea.value += char;
         } else {
             triggerFlashMessage();
-            console.log("Input limit reached!");
         }
     }
-    
+
+    // Map buttons to their corresponding characters.
     const buttonMappings = [
-        {id: "rotateLeftBtn", char: "L"},
-        {id: "rotateRightBtn", char: "R"},
-        {id: "forwardBtn", char: "F"},
-        {id: "dashBtn", char: "D"},
-        {id: "shootBtn", char: "S"}
+        { id: "rotateLeftBtn", char: "a" },
+        { id: "rotateRightBtn", char: "e" },
+        { id: "forwardBtn", char: "z" },
+        { id: "reverseBtn", char: "s" },
+        { id: "shootBtn", char: "d" }
     ];
-    
+
     buttonMappings.forEach(mapping => {
         const btn = document.getElementById(mapping.id);
         if (btn) {
-            btn.addEventListener("click", ()=>{
+            btn.addEventListener("click", () => {
                 addChar(mapping.char);
             });
         }
     });
-    
+
+    // Delete button: Remove the last character.
     const deleteBtn = document.getElementById("deleteBtn");
     if (deleteBtn) {
-        deleteBtn.addEventListener("click", ()=>{
+        deleteBtn.addEventListener("click", () => {
             hudTextArea.value = hudTextArea.value.slice(0, -1);
         });
     }
-    
-    const sendBtn = document.getElementById("sendBtn");
-    if (sendBtn) {
-        sendBtn.addEventListener("click", ()=>{
-            const commands =hudTextArea.value;
-            console.log("sent value to api:", commands);
-            hudTextArea.value = "";
-        });
+
+    // Remove send button handling from JS.
+    // The send button's click event is now managed from the Blazor component.
+}
+
+/**
+ * Triggers a flash message to indicate the input limit has been reached.
+ */
+function triggerFlashMessage() {
+    const flashDiv = document.getElementById("flashMessage");
+    if (!flashDiv) {
+        console.error("Flash message element not found.");
+        return;
     }
-    function triggerFlashMessage() {
-        const flashDiv = document.getElementById("flashMessage");
-        if (!flashDiv) return;
-        
-        flashDiv.classList.add("show");
-        
-        setTimeout(() => {
-            flashDiv.classList.remove("show");
-        }, 1000);
-    }
+
+    flashDiv.classList.add("show");
+
+    // After a brief period, remove the 'show' class so that the message fades away.
+    setTimeout(() => {
+        flashDiv.classList.remove("show");
+    }, 500);
 }
