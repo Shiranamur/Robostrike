@@ -12,13 +12,13 @@ namespace tiz_teh_final_csharp_project
         public string Inputs { get; set; }
         [JsonPropertyName("previousX")] public int XOld { get; set; }
         [JsonPropertyName("previousY")] public int YOld { get; set; }
-        public int Events { get; set; }
         private int _push;
         private char _pushDirection;
+        public bool IsPushed = false;
+        public bool IsAlive = true;
         public int health { get; set; }
         public int hit { get; set; }
-        public int trigger { get; set; } 
-
+        public string Action { get; set; }
         public void MoveForward(Map carte)
         {
             int newX = X;
@@ -200,276 +200,146 @@ namespace tiz_teh_final_csharp_project
             return i;
         }
 
-        public int Shoot(Map carte, List<Player> players)
+
+        public Dictionary<int, Dictionary<int, int>> Shoot(Map map, List<Player> players)
         {
-            if (Direction == 'S')
+            // Define direction vectors
+            int dx = 0, dy = 0;
+            switch (Direction)
             {
-                int i = Y;
-                i += 1;
-                while (i < carte.Height)
+                case 'N': dy = -1; break;
+                case 'S': dy = 1; break;
+                case 'E': dx = 1; break;
+                case 'W': dx = -1; break;
+            }
+    
+            // Start from current position and move in the direction
+            int checkX = X, checkY = Y;
+    
+            // Create empty result dictionary
+            var result = new Dictionary<int, Dictionary<int, int>>();
+
+            while (true)
+            {
+                checkX += dx;
+                checkY += dy;
+                
+                // check if we're still within the map
+                if (checkX < 0 || checkY < 0 || checkX >= map.Width || checkY >= map.Height)
+                    break; // Out of bounds
+                
+                // Check if any player is hit
+                foreach (var player in players)
                 {
-                    if (CheckTile(X, i, players) > 0)
+                    if (player.X == checkX && player.Y == checkY)
                     {
-                        foreach(var player in players)
-                        {
-                            if (player.X == X && player.Y == i)
-                            {
-                                player.health -= 1;
-                                player.hit += 1;
-                                return 1;
-                            }
-                        }
+                        player.health -= 1;
+                        player.hit += 1;
+                        
+                        result[player.Id] = new Dictionary<int, int>{{ checkX, checkY }};
+                        return result;
                     }
-                    i += 1;
                 }
             }
-            else if (Direction == 'N')
-            {
-                int i = Y;
-                i -= 1;
-                while (i >= 0)
-                {
-                    if (CheckTile(X, i, players) > 0)
-                    {
-                        foreach(var player in players)
-                        {
-                            if (player.X == X && player.Y == i)
-                            {
-                                player.health -= 1;
-                                player.hit += 1;
-                                return 1;
-                            }
-                        }
-                    }
-                    i -= 1;
-                }
-            }
-            else if (Direction == 'E')
-            {
-                int i = X;
-                i += 1;
-                while (i >= 0)
-                {
-                    if (CheckTile(i, Y, players) > 0)
-                    {
-                        foreach(var player in players)
-                        {
-                            if (player.X == i && player.Y == Y)
-                            {
-                                player.health -= 1;
-                                player.hit += 1;
-                                return 1;
-                            }
-                        }
-                    }
-                    i += 1;
-                }
-            }
-            else if (Direction == 'W')
-            {
-                int i = X;
-                i -= 1;
-                while (i >= 0)
-                {
-                    if (CheckTile(i, Y, players) > 0)
-                    {
-                        foreach(var player in players)
-                        {
-                            if (player.X == i && player.Y == Y)
-                            {
-                                player.health -= 1;
-                                player.hit += 1;
-                                return 1;
-                            }
-                        }
-                    }
-                    i -= 1;
-                }
-            }
-            return -1;
+
+            return result; // no one hit
         }
-        public int HandleCollision(Player player1, Player player2, Map carte, List<Player> players)
+
+
+        public int HandleCollision(Player player1, Player player2, Map map, List<Player> players)
         {
-            if (player1._push > player2._push && player2._push == 0)
+
+            // handle equal push case first
+            if (player1._push == player2._push)
             {
-                if (player1._pushDirection == 'N')
-                {
-                    player2._push = 1;
-                    player2._pushDirection = 'N';
-                    bool isValid = carte.IsValidMove(player2.X, player2.Y - 1);
-                    if (isValid && CheckTile(player2.X, player2.Y - 1, players) == 1)
-                    {
-                        foreach (var player in players)
-                        {
-                            if (player2.X == player.X && player2.Y - 1 == player.Y)
-                            {
-                                player.YOld = player.Y;
-                                player2.YOld = player2.Y;
-                                player2.Y += -1;
-                                if (HandleCollision(player2, player, carte, players) == 1)
-                                {
-                                    Console.WriteLine("1");
-                                    return 1;
-                                }
-                                else
-                                {
-                                    player1.Y = player1.YOld;
-                                    player2.Y = player2.YOld;
-                                    player.Y = player.YOld;
+                player1.X = player1.XOld;
+                player1.Y = player1.YOld;
+                player2.X = player2.XOld;
+                player2.Y = player2.YOld;
+                return 0;
+            }
+            
+            // if player1 doesn't have push priority, no collision handling occurs
+            if (!(player1._push > player2._push && player2._push == 0))
+            {
+                return -1;
+            }
 
-                                    return 0;
-                                }
-                            }
+            int targetX = player2.X;
+            int targetY = player2.Y;
+
+            switch (player1._pushDirection)
+            {
+                case 'N': targetY -= 1; break;
+                case 'S': targetY += 1; break;
+                case 'E': targetX += 1; break;
+                case 'W': targetX -= 1; break;
+            }
+
+            // set player2 push properties
+            player2._push = 1;
+            player2._pushDirection = player1._pushDirection;
+            
+            // check if move is valid
+            bool isValid = map.IsValidMove(targetX, targetY);
+            
+            // invalid move - return player1 to original position
+            if (!isValid)
+            {
+                player1.X = player1.XOld;
+                player1.Y = player1.YOld;
+                return 0;
+            }
+            
+            // Check if there's another player at the target position
+            int tileStatus = CheckTile(targetX, targetY, players);
+            
+            // empty tile - move player2 to target position
+            if (tileStatus == 0)
+            {
+                player2.X = targetX;
+                player2.Y = targetY;
+                return 1;
+            }
+
+            if (tileStatus == 1)
+            {
+                foreach (var player in players)
+                {
+                    if (player.X == targetX && player.Y == targetY)
+                    {
+                        // Save original positions
+                        player.XOld = player.X;
+                        player.YOld = player.Y;
+                        player2.XOld = player2.X;
+                        player2.YOld = player2.Y;
+
+                        // Move player2 to target position
+                        player2.X = targetX;
+                        player2.Y = targetY;
+
+                        // recursively handle collision with next player
+                        if (HandleCollision(player2, player, map, players) == 1)
+                        {
+                            return 1; // Success
+                        }
+                        else
+                        {
+                            // Revert positions if collision chain failed
+                            player1.X = player1.XOld;
+                            player1.Y = player1.YOld;
+                            player2.X = player2.XOld;
+                            player2.Y = player2.YOld;
+                            player.X = player.XOld;
+                            player.Y = player.YOld;
+                            return 0; // Failure
                         }
                     }
-                    else if (isValid && CheckTile(player2.X, player2.Y - 1, players) == 0)
-                    {
-                        player2.Y += -1;
-                        return 1;
-                    }
-                    else
-                    {
-                        player1.Y = player1.YOld;
-                        return 0;
-                    }
-                }
-                else if (player1._pushDirection == 'E')
-                {
-                    player2._push = 1;
-                    player2._pushDirection = 'E';
-                    bool isValid = carte.IsValidMove(player2.X + 1, player2.Y);
-                    if (isValid && CheckTile(player2.X + 1, player2.Y, players) == 1)
-                    {
-                        Console.WriteLine("prout");
-                        foreach (var player in players)
-                        {
-                            if (player2.X + 1 == player.X && player2.Y == player.Y)
-                            {
-                                player.XOld = player.X;
-                                player2.XOld = player2.X;
-                                player2.X += 1;
-                                if (HandleCollision(player2, player, carte, players) == 1)
-                                {
-                                    Console.WriteLine("1");
-                                    return 1;
-                                }
-                                else
-                                {
-                                    player1.X = player1.XOld;
-                                    player2.X = player2.XOld;
-                                    player.X = player.XOld;
-
-                                    return 0;
-                                }
-                            }
-                        }
-                    }
-                    else if (isValid && CheckTile(player2.X + 1, player2.Y, players) == 0)
-                    {
-                        player2.X += 1;
-                        return 1;
-                    }
-                    else
-                    {
-                        player1.X = player1.XOld;
-                        return 0;
-                    }
-                }
-                else if (player1._pushDirection == 'W')
-                {
-                    player2._push = 1;
-                    player2._pushDirection = 'W';
-                    bool isValid = carte.IsValidMove(player2.X - 1, player2.Y);
-                    if (isValid && CheckTile(player2.X - 1, player2.Y, players) == 1)
-                    {
-                        Console.WriteLine("prout");
-                        foreach (var player in players)
-                        {
-                            if (player2.X - 1 == player.X && player2.Y == player.Y)
-                            {
-                                player.XOld = player.X;
-                                player2.XOld = player2.X;
-                                player2.X += -1;
-                                if (HandleCollision(player2, player, carte, players) == 1)
-                                {
-                                    Console.WriteLine("1");
-                                    return 1;
-                                }
-                                else
-                                {
-                                    player1.X = player1.XOld;
-                                    player2.X = player2.XOld;
-                                    player.X = player.XOld;
-
-                                    return 0;
-                                }
-                            }
-                        }
-                    }
-                    else if (isValid && CheckTile(player2.X - 1, player2.Y, players) == 0)
-                    {
-                        player2.X += -1;
-                        return 1;
-                    }
-                    else
-                    {
-                        player1.X = player1.XOld;
-                        return 0;
-                    }
-                }
-                else if (player1._pushDirection == 'S')
-                {
-                    player2._push = 1;
-                    player2._pushDirection = 'S';
-                    bool isValid = carte.IsValidMove(player2.X, player2.Y + 1);
-                    if (isValid && CheckTile(player2.X, player2.Y + 1, players) == 1)
-                    {
-                        Console.WriteLine("prout");
-                        foreach (var player in players)
-                        {
-                            if (player2.X == player.X && player2.Y + 1 == player.Y)
-                            {
-                                player.YOld = player.Y;
-                                player2.YOld = player2.Y;
-                                player2.Y += 1;
-                                if (HandleCollision(player2, player, carte, players) == 1)
-                                {
-                                    Console.WriteLine("1");
-                                    return 1;
-                                }
-                                else
-                                {
-                                    player1.Y = player1.YOld;
-                                    player2.Y = player2.YOld;
-                                    player.Y = player.YOld;
-
-                                    return 0;
-                                }
-                            }
-                        }
-                    }
-                    else if (isValid && CheckTile(player2.X, player2.Y + 1, players) == 0)
-                    {
-                        player2.Y += 1;
-                        return 1;
-                    }
-                    else
-                    {
-                        player1.Y = player1.YOld;
-                        return 0;
-                    }
-                }
-                else if (player1._push == player2._push)
-                {
-                    player1.X = player1.XOld;
-                    player1.Y = player1.YOld;
-                    player2.X = player2.XOld;
-                    player2.Y = player2.YOld;
-                    return 0;
                 }
             }
 
             return -1;
+            
         }
     }
 }
