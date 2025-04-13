@@ -11,8 +11,6 @@ builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddHttpClient();
 
-
-
 // bdd
 builder.Services.AddDbContext<RobostrikeContext>(options =>
     options.UseMySql(
@@ -32,7 +30,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
-
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 app.MapStaticAssets();

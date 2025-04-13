@@ -15,52 +15,75 @@ public class GameEndpoints : IEndpointMapper
     public void Endpoints(WebApplication app)
     {
         app.MapPut("/api/game/{gameId}/inputs", async (HttpRequest request, string gameId, GameManager gameManager) =>
+{
+    Console.WriteLine("PUT /api/game/{gameId}/inputs called");
+    Console.WriteLine($"Received gameId: {gameId}");
+
+    if (string.IsNullOrEmpty(gameId))
+    {
+        Console.WriteLine("BadRequest: gameId is null or empty");
+        return Results.BadRequest("Must give a valid Game ID");
+    }
+
+    Game? game = gameManager.GetGame(gameId);
+    Console.WriteLine(game == null ? "Game not found" : "Game found");
+
+    if (game == null)
+    {
+        return Results.NotFound();
+    }
+
+    var context = request.HttpContext;
+
+    if (context.Items.TryGetValue("UserId", out var userIdObj) && userIdObj is string userIdStr && int.TryParse(userIdStr, out var userId))
+    {
+        try
+        {
+            using var reader = new StreamReader(request.Body);
+            string body = await reader.ReadToEndAsync();
+
+            Console.WriteLine($"Raw body: {body}");
+
+            string? playerMoves = JsonSerializer.Deserialize<string>(body);
+            if (string.IsNullOrWhiteSpace(playerMoves))
             {
-                if (string.IsNullOrEmpty(gameId))
-                {
-                    return Results.BadRequest("Must give a valid Game ID");
-                }
-                Game? game = gameManager.GetGame(gameId);
+                Console.WriteLine("Deserialized playerMoves is null or empty");
+                return Results.BadRequest("PlayerMoves missing or empty in body");
+            }
 
-                if (game == null)
-                {
-                    return Results.NotFound();
-                }
+            Console.WriteLine($"Extracted PlayerMoves: {playerMoves}");
 
-                var context = request.HttpContext;
+            string playerMoves6Maxlength = new string(playerMoves.Take(6).ToArray());
+            game.SubmitPlayerInput(userId, playerMoves6Maxlength);
 
-                if (context.Items.TryGetValue("UserId", out var userIdObj) && userIdObj is string userIdStr &&
-                    int.TryParse(userIdStr, out var userId) && context.Items.TryGetValue("PlayerMoves", out var playerMovesObj) && playerMovesObj is string playerMoves)
-                {
-                    try
-                    {
-                        string playerMoves6Maxlength = new string(playerMoves.Take(6).ToArray());
-                        game.SubmitPlayerInput(userId, playerMoves6Maxlength);
-                        Console.WriteLine("test");
-                        return Results.Ok("Moves Submitted");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error: {ex.Message}");
-                        return Results.InternalServerError("Unexpected behavior from the game occurred");
-                    }
-                }
-    
-                return Results.BadRequest("Invalid user ID or player moves");
-            })
-            .WithName("Send input")
-            .Produces<MapResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status500InternalServerError)
-            .Produces(StatusCodes.Status401Unauthorized);
+            Console.WriteLine("SubmitPlayerInput called successfully");
+
+            return Results.Ok("Moves Submitted");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception caught while processing input: {ex.Message}");
+            return Results.InternalServerError("Unexpected behavior from the game occurred");
+        }
+    }
+
+    Console.WriteLine("Invalid or missing UserId in context");
+    return Results.BadRequest("Invalid user ID or missing PlayerMoves");
+});
 
         app.MapGet("/api/game/{gameId}/status", async (string gameId, GameManager gameManager) =>
         {
+            Console.WriteLine("GET /api/game/{gameId}/status called");
+            Console.WriteLine($"Received gameId: {gameId}");
+
             if (string.IsNullOrEmpty(gameId))
             {
+                Console.WriteLine("BadRequest: gameId is null or empty");
                 return Results.BadRequest("Must give a valid Game ID");
             }
+
             Game? game = gameManager.GetGame(gameId);
+            Console.WriteLine(game == null ? "Game not found" : "Game found");
 
             if (game == null)
             {

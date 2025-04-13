@@ -1,28 +1,32 @@
 @page "/map"
 @rendermode InteractiveServer
 
-
-<h3>Map</h3>
-<!--Upload map info-->
-<div class="card-body">
+<div class="container mt-5">
+    <h3 class="text-center text-primary mb-4">Map Management</h3>
     <div class="row">
-        <div class="col-md-6 mb-3">
-            <h5>Upload JSON File</h5>
-            <div class="input-group">
-                <InputFile OnChange="HandleFileSelection" accept=".json" class="form-control" />
-                <button type="button" class="btn btn-primary" @onclick="ProcessSelectedFile" disabled="@(_selectedFile == null)">Upload</button>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow p-3">
+                <h5>Import a JSON File</h5>
+                <div class="input-group">
+                    <InputFile OnChange="HandleFileSelection" accept=".json" class="form-control" />
+                    <button type="button" class="btn btn-primary" @onclick="ProcessSelectedFile" disabled="@(_selectedFile == null)">Upload</button>
+                </div>
             </div>
         </div>
 
-        <div class="col-md-6 mb-3">
-            <h5>Paste JSON Data 10*10 maximum size</h5>
-            <div class="input-group">
-                <textarea @bind="_mapJsonText" class="form-control" placeholder="Paste map JSON here" rows="1"></textarea>
-                <button type="button" class="btn btn-primary" @onclick="ParseMapFromText">Load</button>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow p-3">
+                <h5>Paste JSON (max 10x10)</h5>
+                <div class="input-group">
+                    <textarea @bind="_mapJsonText" class="form-control" placeholder="Paste here" rows="4"></textarea>
+                    <button type="button" class="btn btn-primary" @onclick="ParseMapFromText">Load</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+
 
 @if (!string.IsNullOrEmpty(_errorMessage))
 {

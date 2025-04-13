@@ -3,32 +3,41 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<h3>Inscription</h3>
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow p-4" style="max-width: 500px; width: 100%;">
+        <h3 class="text-center mb-4">Register</h3>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <p style="color: red">@errorMessage</p>
-}
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
 
-<form @onsubmit="HandleSubmit">
-    <div>
-        <label>Nom d'utilisateur :</label>
-        <input @bind="username" />
+        <form @onsubmit="HandleSubmit">
+            <div class="form-floating mb-3">
+                <input @bind="username" class="form-control" id="registerUsername" placeholder="Username" />
+                <label for="registerUsername">Username</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input @bind="email" type="email" class="form-control" id="registerEmail" placeholder="Email" />
+                <label for="registerEmail">Email</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" @bind="password" class="form-control" id="registerPassword" placeholder="Password" />
+                <label for="registerPassword">Password</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" @bind="confirmPassword" class="form-control" id="registerConfirmPassword" placeholder="Confirm Password" />
+                <label for="registerConfirmPassword">Confirm Password</label>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">Sing up</button>
+        </form>
     </div>
-    <div>
-        <label>Email :</label>
-        <input @bind="email" type="email" />
-    </div>
-    <div>
-        <label>Mot de passe :</label>
-        <input type="password" @bind="password" />
-    </div>
-    <div>
-        <label>Confirmer le mot de passe :</label>
-        <input type="password" @bind="confirmPassword" />
-    </div>
-    <button type="submit">S'inscrire</button>
-</form>
+</div>
+
 
 @code {
     private string username;
