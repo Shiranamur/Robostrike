@@ -7,6 +7,14 @@ window.localStore = {
   },
   remove: function(key) {
     localStorage.removeItem(key);
+  },
+  setJson: function (key, obj) {
+    const json = JSON.stringify(obj);
+    localStorage.setItem(key, json);
+  },
+  getJson: function (key) {
+    const json = localStorage.getItem(key);
+    return json ? JSON.parse(json) : null;
   }
 };
 
@@ -16,12 +24,12 @@ let mapData;
 let playerPos = { x: 0, y: 0 };
 
 //Charger map json
-fetch('map_test.json')
+/*fetch('map_test.json')
   .then(res => res.json())
   .then(data => {
     mapData = data;
     initMap();
-  });
+  });*/
 
 function initMap() {
   const mapContainer = document.getElementById('map');

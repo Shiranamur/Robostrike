@@ -1,36 +1,71 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>RobotStrick</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+@page "/game"
+@inject IJSRuntime JS
+@rendermode InteractiveServer
 
-  <div id="main-container">
+<h3>Match ID: @gameData?.matchId</h3>
+
+<div id="game-container">
+    <!-- Map container; note that CSS should set position: relative for layering -->
+    <div id="map" style="position: relative; width: 480px; height: 480px; border: 1px solid #ccc;"></div>
+
+    <!-- HUD area -->
+    <div id="hud">
+        <!-- Textarea for displaying debug command sequence -->
+        <textarea id="hudTextArea" rows="4" cols="50" placeholder="Enter commands..."></textarea>
+        <div id="hudButtons">
+            <button id="rotateLeftBtn">Rotate Left</button>
+            <button id="rotateRightBtn">Rotate Right</button>
+            <button id="forwardBtn">Forward</button>
+            <button id="dashBtn">Dash</button>
+            <button id="shootBtn">Shoot</button>
+            <button id="deleteBtn">Delete</button>
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class Tile
+    {
+        public int x { get; set; }
+        public int y { get; set; }
+        public string Type { get; set; }
+    }
     
-    <!-- MAP + CONTRÔLES -->
-    <div id="left-section">
-      <div id="map"></div>
+    public class MapData
+    {
+        public int map_width { get; set; }
+        public int map_height { get; set; }
+        public List<Tile> tiles { get; set; }
+    }
+    
+    public class GameData
+    {
+        public string matchId { get; set; }
+        public MapData map { get; set; }
+        public List<Player> players { get; set; }
+    }
+    
+    public class Player
+    {
+        public int id { get; set; }
+        public int x { get; set; }
+        public int y { get; set; }
+        public string direction { get; set; }
+        public string curInput { get; set; }
+        // Additional properties needed
+    }
 
-      <!-- contrôles de déplacement -->
-      <div id="controls">
-        <button onclick="queueAction('haut')">↑</button>
-        <button onclick="queueAction('bas')">↓</button>
-        <button onclick="queueAction('gauche')">←</button>
-        <button onclick="queueAction('droite')">→</button>
-      </div>
-    </div>
-
-    <!-- PANNEAU ACTIONS -->
-    <div id="action-queue">
-      <h3>Actions</h3>
-      <ul id="actionList"></ul>
-      <button onclick="executeActions()" id="btnP">✅ Prêt</button>
-    </div>
-
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+    private GameData gameData;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            gameData = await JS.InvokeAsync<GameData>("window.localStore.getJson", "initialGameData");
+            StateHasChanged();
+            
+            await JS.InvokeVoidAsync("startGameLoop", gameData);
+        }
+    }
+}

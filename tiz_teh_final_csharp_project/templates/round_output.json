@@ -1,0 +1,50 @@
+{
+  "turns": [
+    {
+      "turnNumber": 0,
+      "Players": [
+        {
+          "id": 1,
+          "x": 0,
+          "y": 0,
+          "direction": "S",
+          "curInput": "\u0000",
+          "inputs": "zzzzzz",
+          "events": 0
+        },
+        {
+          "id": 2,
+          "x": 2,
+          "y": 0,
+          "direction": "N",
+          "curInput": "\u0000",
+          "inputs": "zzzzzz",
+          "events": 0
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "Players": [
+        {
+          "id": 1,
+          "x": 0,
+          "y": 0,
+          "direction": "S",
+          "curInput": "\u0000",
+          "inputs": "zzzzzz",
+          "events": 0
+        },
+        {
+          "id": 2,
+          "x": 2,
+          "y": 0,
+          "direction": "N",
+          "curInput": "\u0000",
+          "inputs": "zzzzzz",
+          "events": 0
+        }
+      ]
+    }
+  ]
+}

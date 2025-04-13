@@ -116,3 +116,23 @@ function doMovement(direction) {
   const event = new KeyboardEvent('keydown', { key: keyMap[direction] });
   handleMovement(event);
 }
+
+window.gameSetup = {
+  init: function(mapData, playersData) {
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // e.g. draw or log the map:
+    console.log("Loaded map, width:", mapData.width, "height:", mapData.height);
+    console.log("Tiles:", mapData.tiles);
+
+    // draw players
+    playersData.forEach(player => {
+      console.log(`Player ${player.id} at (${player.x}, ${player.y}), direction=${player.direction}`);
+      // Example: draw a small square
+      ctx.fillStyle = "red";
+      ctx.fillRect(player.x, player.y, 10, 10);
+    });
+  }
+};
+

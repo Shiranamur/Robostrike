@@ -1,0 +1,22 @@
+﻿@page "/testbutton"
+@rendermode InteractiveServer
+<h3>Test Button Component</h3>
+<button @onclick="OnButtonClick">Click Me!</button>
+<p>@message</p>
+
+@code {
+    private string message = "Waiting for button click...";
+    
+    private async Task OnButtonClick()
+    {
+        // Log to the browser console using JS interop to make sure it fires on the client.
+        await JS.InvokeVoidAsync("console.log", "[TestButton] OnButtonClick fired!");
+        
+        // Also update a message on the page.
+        message = "Button has been clicked!";
+    }
+
+    // Inject IJSRuntime if not already
+    [Inject]
+    public IJSRuntime JS { get; set; }
+}
