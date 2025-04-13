@@ -3,22 +3,42 @@ using System.Collections.Concurrent;
 
 namespace tiz_teh_final_csharp_project
 {
-    /// <summary>
-    /// Représente un tour de jeu.
-    /// Appelé avec Turn(int turnNumber, List(Player) players) et retourne un objet Turn contenant le numéro de tour et la liste des joueurs.
-    /// </summary>
-    public class Turn
+    public class GameStatusResponse
     {
-        public int TurnNumber { get; set; }
-        public List<Player> Players { get; set; }
-
-        public Turn(int turnNumber, List<Player> players)
-        {
-            this.TurnNumber = turnNumber;
-            Players = players;
-        }
+        public string GameId { get; set; }
+        public int CurrentRound { get; set; }
+        public RoundState RoundState { get; set; }
+        public bool GameOver { get; set; }
     }
 
+    public class RoundState
+    {
+        public int RoundNumber { get; set; }
+        public List<TurnState> Turns { get; set; } = new List<TurnState>();
+        public Map Map { get; set; }
+    }
+
+    public class TurnState
+    {
+        public int TurnNumber { get; set; }
+        public List<PlayerState> Players { get; set; } = new List<PlayerState>();
+    }
+
+    public class PlayerState
+    {
+        public int Id { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public char Direction { get; set; }
+        public int PreviousX { get; set; }
+        public int PreviousY { get; set; }
+        public int Events { get; set; }
+        // not yet used
+        public int Action { get; set; }
+        public int Health { get; set; }
+        public int Damage_Taken { get; set; }
+    }
+    
     /// <summary>
     /// Représente une partie de jeu.
     /// La classe Game charge la carte depuis un fichier JSON, initialise la liste des joueurs (enrichie avec leur position, direction, etc.),
@@ -30,9 +50,9 @@ namespace tiz_teh_final_csharp_project
         public List<Player> Players { get; set; }
         public string MatchId { get; set; }
 
-        private int _currentRound = 0;
+        public int CurrentRound = 0;
         
-        public bool _gameOver = false;
+        public bool GameOver = false;
 
         private const int _maxRounds = 6;
 
@@ -48,6 +68,12 @@ namespace tiz_teh_final_csharp_project
 
         // Stocke un TaskCompletionSource pour chaque round afin d'attendre que tous les joueurs aient soumis leur input.
         private readonly ConcurrentDictionary<int, TaskCompletionSource<bool>> _roundInputCompletionSources = new();
+
+        // buffer list to contain turns for the round class
+        private List<TurnState> _currentRoundTurns = new List<TurnState>();
+        
+        private readonly Dictionary<int, RoundState> _completedRoundStates = new Dictionary<int, RoundState>();
+
 
         
         /// <summary>
@@ -164,12 +190,12 @@ namespace tiz_teh_final_csharp_project
                 // Lock only the specific turn's dictionary for thread safety
                 lock (turnInputs)
                 {
-                    turnInputs[playerId] = inputs[turn];
+                    turnInputs[playerId] = turn < inputs.Length ? inputs[turn] : ' ';
                 }
             }
 
             // Add player to the set of players who have submitted inputs for this round
-            _submittedInputs.GetOrAdd(_currentRound, _ => new HashSet<int>()).Add(playerId);
+            _submittedInputs.GetOrAdd(CurrentRound, _ => new HashSet<int>()).Add(playerId);
 
             // Check if all players have submitted inputs for current round
             CheckRoundInputsCompletion();
@@ -183,13 +209,13 @@ namespace tiz_teh_final_csharp_project
         private void CheckRoundInputsCompletion()
         {
             // Get the set of players who submitted for this round
-            if (_submittedInputs.TryGetValue(_currentRound, out var submittedPlayers))
+            if (_submittedInputs.TryGetValue(CurrentRound, out var submittedPlayers))
             {
                 lock (submittedPlayers)
                 {
                     // Check if all players have submitted
                     if (submittedPlayers.Count >= Players.Count &&
-                        _roundInputCompletionSources.TryGetValue(_currentRound, out var tcs))
+                        _roundInputCompletionSources.TryGetValue(CurrentRound, out var tcs))
                     {
                         // Set the result and complete the waiting task
                         tcs.TrySetResult(true);
@@ -207,13 +233,13 @@ namespace tiz_teh_final_csharp_project
         private async Task WaitForRoundInputsAsync()
         {
             var tcs = new TaskCompletionSource<bool>();
-            _roundInputCompletionSources[_currentRound] = tcs;
+            _roundInputCompletionSources[CurrentRound] = tcs;
 
             // Track which players have and haven't submitted
             var pendingPlayers = new HashSet<int>(Players.Select(p => p.Id));
     
             // Check if any players have already submitted
-            if (_submittedInputs.TryGetValue(_currentRound, out var submittedPlayers))
+            if (_submittedInputs.TryGetValue(CurrentRound, out var submittedPlayers))
             {
                 lock (submittedPlayers)
                 {
@@ -232,7 +258,7 @@ namespace tiz_teh_final_csharp_project
             // Add timeout
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             cts.Token.Register(() => {
-                Console.WriteLine($"Round {_currentRound} timed out waiting for players: {string.Join(", ", pendingPlayers)}");
+                Console.WriteLine($"Round {CurrentRound} timed out waiting for players: {string.Join(", ", pendingPlayers)}");
         
                 // For players who didn't submit, use a default input
                 foreach (var playerId in pendingPlayers)
@@ -266,32 +292,58 @@ namespace tiz_teh_final_csharp_project
             }
         }
         
-        
-        /// <summary>
-        /// Starts and runs the game asynchronously until completion.
-        /// Processes rounds sequentially, waiting for player inputs (with timeout) before processing each round.
-        /// </summary>
-        /// <returns>A task that completes with true when the game is finished</returns>
-        public async Task<bool> StartGameAsync()
+        // Add this method to get round state
+        // Update GetCurrentRoundState to return the most recent completed round
+        public RoundState GetCurrentRoundState()
         {
-            while (!_gameOver && _currentRound < _maxRounds) // continue game while not finished
+            // If there's a completed round, return it
+            if (_completedRoundStates.TryGetValue(CurrentRound > 0 ? CurrentRound - 1 : 0, out var completedState))
             {
-                // wait inputs with timout
-                await WaitForRoundInputsAsync();
-               
-                // process turns inside the round
-                for (int turn = 0; turn < _maxTurns; turn++)
-                {
-                    // get the inputs for the turn
-                    Dictionary<int, char> turnInputs = _roundInputs.GetOrAdd(turn, new Dictionary<int, char>());
-                    ProcessTurn(turnInputs); // process
-                }
-                _currentRound++;
+                return completedState;
             }
-            return true; // game is finished
+        
+            // Otherwise return current in-progress state
+            return new RoundState
+            {
+                RoundNumber = CurrentRound,
+                Turns = _currentRoundTurns,
+                Map = this.map
+            };
         }
-
-
+        
+        
+        // Add method to get specific round state
+        public RoundState GetRoundState(int roundNumber)
+        {
+            if (_completedRoundStates.TryGetValue(roundNumber, out var state))
+            {
+                return state;
+            }
+        
+            return null;
+        }
+        
+        
+        public void RecordTurnState(int currentTurn)
+        {
+            var turnState = new TurnState
+            {
+                TurnNumber = currentTurn,
+                Players = Players.Select(p => new PlayerState
+                {
+                    Id = p.Id,
+                    X = p.X,
+                    Y = p.Y,
+                    Direction = p.Direction,
+                    PreviousX = p.XOld,
+                    PreviousY = p.YOld,
+                    Events = p.Events
+                }).ToList()
+            };
+            _currentRoundTurns.Add(turnState);
+        }
+        
+        
         /// <summary>
         /// Processes a single turn by applying player inputs and resolving collisions.
         /// Updates player positions based on their inputs and handles any resulting collisions between players.
@@ -315,6 +367,44 @@ namespace tiz_teh_final_csharp_project
                     }
                 }
             }
+        }
+        
+        
+        /// <summary>
+        /// Starts and runs the game asynchronously until completion.
+        /// Processes rounds sequentially, waiting for player inputs (with timeout) before processing each round.
+        /// </summary>
+        /// <returns>A task that completes with true when the game is finished</returns>
+        public async Task<bool> StartGameAsync()
+        {
+            while (!GameOver && CurrentRound < _maxRounds) // continue game while not finished
+            {
+                _currentRoundTurns = new List<TurnState>(); // Create new instead of clearing
+
+                // wait inputs with timout
+                await WaitForRoundInputsAsync();
+               
+                // process turns inside the round
+                for (int turn = 0; turn < _maxTurns; turn++)
+                {
+                    // get the inputs for the turn
+                    Dictionary<int, char> turnInputs = _roundInputs.GetOrAdd(turn, new Dictionary<int, char>());
+                    ProcessTurn(turnInputs); // process
+                    RecordTurnState(turn);
+                }
+                
+
+                // Save the completed round state
+                _completedRoundStates[CurrentRound] = new RoundState
+                {
+                    RoundNumber = CurrentRound,
+                    Turns = new List<TurnState>(_currentRoundTurns), // Create a copy
+                    Map = this.map
+                };
+                
+                CurrentRound++;                
+            }
+            return true; // game is finished
         }
         
         /// <summary>
