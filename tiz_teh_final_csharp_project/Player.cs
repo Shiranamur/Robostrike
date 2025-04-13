@@ -9,7 +9,6 @@ namespace tiz_teh_final_csharp_project
         public int Y { get; set; }
         public char Direction { get; set; }
         public char CurInput { get; set; }
-        public string Inputs { get; set; }
         public int XOld { get; set; }
         public int YOld { get; set; }
         public int Push;

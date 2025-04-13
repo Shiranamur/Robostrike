@@ -39,26 +39,32 @@ public class GameEndpoints : IEndpointMapper
     {
         try
         {
-            using var reader = new StreamReader(request.Body);
-            string body = await reader.ReadToEndAsync();
-
-            Console.WriteLine($"Raw body: {body}");
-
-            string? playerMoves = JsonSerializer.Deserialize<string>(body);
-            if (string.IsNullOrWhiteSpace(playerMoves))
+            if (game.Players.Any(player => player.Id == userId))
             {
-                Console.WriteLine("Deserialized playerMoves is null or empty");
-                return Results.BadRequest("PlayerMoves missing or empty in body");
+                using var reader = new StreamReader(request.Body);
+                string body = await reader.ReadToEndAsync();
+
+                Console.WriteLine($"Raw body: {body}");
+
+                string? playerMoves = JsonSerializer.Deserialize<string>(body);
+                if (string.IsNullOrWhiteSpace(playerMoves))
+                {
+                    Console.WriteLine("Deserialized playerMoves is null or empty");
+                    return Results.BadRequest("PlayerMoves missing or empty in body");
+                }
+
+                Console.WriteLine($"Extracted PlayerMoves: {playerMoves}");
+
+                string playerMoves6Maxlength = new string(playerMoves.Take(6).ToArray());
+                game.SubmitPlayerInput(userId, playerMoves6Maxlength);
+
+                Console.WriteLine("SubmitPlayerInput called successfully");
+
+                return Results.Ok("Moves Submitted");
             }
-
-            Console.WriteLine($"Extracted PlayerMoves: {playerMoves}");
-
-            string playerMoves6Maxlength = new string(playerMoves.Take(6).ToArray());
-            game.SubmitPlayerInput(userId, playerMoves6Maxlength);
-
-            Console.WriteLine("SubmitPlayerInput called successfully");
-
-            return Results.Ok("Moves Submitted");
+            
+            Console.WriteLine($"Player with ID {userId} not found in game");
+            return Results.NotFound("Player not found in the game");
         }
         catch (Exception ex)
         {

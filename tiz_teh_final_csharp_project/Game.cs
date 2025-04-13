@@ -62,7 +62,7 @@ namespace tiz_teh_final_csharp_project
 
         // Stocke les inputs des joueurs pour chaque round.
         // Key: numéro de round ; Value: dictionnaire associant l'id du joueur à son caractère d'entrée.
-        private readonly ConcurrentDictionary<int, Dictionary<int, char>> _roundInputs = new();
+        private ConcurrentDictionary<int, Dictionary<int, char>> _roundInputs = new();
         
         // Track which players have submitted inputs for the current round
         private readonly ConcurrentDictionary<int, HashSet<int>> _submittedInputs = new();
@@ -148,7 +148,6 @@ namespace tiz_teh_final_csharp_project
                 Players[i].X = spacingX * (col + 1);
                 Players[i].Y = spacingY * (row + 1);
                 Players[i].Direction = 'S';  // Direction par défaut (Sud)
-                Players[i].Inputs = string.Empty; // Les inputs seront reçus via l'API
             }
         }
         
@@ -386,6 +385,7 @@ namespace tiz_teh_final_csharp_project
                 if (player.IsAlive)
                 {
                     ReadInput(player, turnInputs.GetValueOrDefault(player.Id, ' '), map);
+                    Console.WriteLine($"Player : {player.Id} has input : {turnInputs.GetValueOrDefault(player.Id, ' ')}");
                 }
 
             }
@@ -466,16 +466,20 @@ namespace tiz_teh_final_csharp_project
         /// <returns>A task that completes with true when the game is finished</returns>
         public async Task<bool> StartGameAsync()
         {
+            Console.WriteLine("Started the game !");
             while (!GameOver && CurrentRound < _maxRounds) // continue game while not finished
             {
+                Console.WriteLine($"Round : {CurrentRound}");
                 _currentRoundTurns = new List<TurnState>(); // Create new instead of clearing
-
+                
+                _roundInputs = new ConcurrentDictionary<int, Dictionary<int, char>>();
                 // wait inputs with timout
                 await WaitForRoundInputsAsync();
                
                 // process turns inside the round
                 for (int turn = 0; turn < _maxTurns; turn++)
                 {
+                    Console.WriteLine($"Turn : {turn}");
                     // get the inputs for the turn
                     foreach (var player in Players)
                     {
@@ -498,6 +502,7 @@ namespace tiz_teh_final_csharp_project
                 
                 CurrentRound++;                
             }
+            Console.WriteLine("Game Is finished");
             return true; // game is finished
         }
         
