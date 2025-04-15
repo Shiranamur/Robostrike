@@ -346,8 +346,9 @@ namespace tiz_teh_final_csharp_project
                         IsAlive = p.IsAlive,
                         Health = p.health,
                         Damage_Taken = p.hit,
-                        // todo Input = _roundInputs.GetValueOrDefault(currentTurn, p.Id),
-                        ShotHitPlayer = p.ShotHitPlayer,
+                        Input = _roundInputs.TryGetValue(currentTurn, out var turnDict) ? 
+                            turnDict.GetValueOrDefault(p.Id, ' ') : ' ',
+                        ShotHitPlayer = p.ShotHitPlayer
                     };
                     
                     // Add collision data if exists for this player
@@ -396,38 +397,59 @@ namespace tiz_teh_final_csharp_project
             {
                 foreach(var otherPlayer in Players)
                 {
+                    if (currentPlayer.Id == otherPlayer.Id) continue;
+            
+                    // Same position collision
                     if (otherPlayer.X == currentPlayer.X && otherPlayer.Y == currentPlayer.Y)
                     {
-                        // skip checks with self player like player1 collision with player1
-                        if (currentPlayer.Id == otherPlayer.Id) continue;
-
-                        // Collision coordinates (where the collision happened)
                         var collisionCoords = new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}};
-    
-                        // Try to handle collision and check the result
                         int result = currentPlayer.HandleCollision(currentPlayer, otherPlayer, map, Players);
-    
-                        if (result == 1) // Successful push
-                        {
-                            _currentTurnCollisions[currentPlayer.Id] = ("pusher", otherPlayer.Id, collisionCoords);
-                            _currentTurnCollisions[otherPlayer.Id] = ("pushed", currentPlayer.Id, collisionCoords);
-                        }
-                        else if (result == -1) // Other player has push priority
-                        {
-                            _currentTurnCollisions[otherPlayer.Id] = ("pusher", currentPlayer.Id, collisionCoords);
-                            _currentTurnCollisions[currentPlayer.Id] = ("pushed", otherPlayer.Id, collisionCoords);
-                        }
-                        else // result == 0, stalemate or failed push
-                        {
-                            _currentTurnCollisions[currentPlayer.Id] = ("stalemate", otherPlayer.Id, collisionCoords);
-                            _currentTurnCollisions[otherPlayer.Id] = ("stalemate", currentPlayer.Id, collisionCoords);
-                        }
+                
+                        RecordCollisionResult(result, currentPlayer, otherPlayer, collisionCoords);
+                    }
+                    // Check for players trying to swap positions
+                    else if (IsPassThroughCollision(currentPlayer, otherPlayer))
+                    {
+                        var collisionCoords = new Dictionary<int, int> {{currentPlayer.XOld, currentPlayer.YOld}};
+                
+                        // Reset position to original location
+                        currentPlayer.X = currentPlayer.XOld;
+                        currentPlayer.Y = currentPlayer.YOld;
+                
+                        // Record collision info
+                        _currentTurnCollisions[currentPlayer.Id] = ("stalemate", otherPlayer.Id, collisionCoords);
                     }
                 }
             }
         }
 
+        // Helper method to check for pass-through collisions
+        private bool IsPassThroughCollision(Player player1, Player player2)
+        {
+            return player1.X == player2.XOld && player1.Y == player2.YOld &&
+                   player2.X == player1.XOld && player2.Y == player1.YOld;
+        }
 
+        // Helper method to record collision results
+        private void RecordCollisionResult(int result, Player currentPlayer, Player otherPlayer, Dictionary<int, int> coordinates)
+        {
+            if (result == 1) // Successful push
+            {
+                _currentTurnCollisions[currentPlayer.Id] = ("push", otherPlayer.Id, coordinates);
+                _currentTurnCollisions[otherPlayer.Id] = ("pushed", currentPlayer.Id, coordinates);
+            }
+            else if (result == -1) // Other player has push priority
+            {
+                _currentTurnCollisions[otherPlayer.Id] = ("push", currentPlayer.Id, coordinates);
+                _currentTurnCollisions[currentPlayer.Id] = ("pushed", otherPlayer.Id, coordinates);
+            }
+            else // result == 0, stalemate or failed push
+            {
+                _currentTurnCollisions[currentPlayer.Id] = ("stalemate", otherPlayer.Id, coordinates);
+                _currentTurnCollisions[otherPlayer.Id] = ("stalemate", currentPlayer.Id, coordinates);
+            }
+        }
+        
         public bool CheckGameEnd()
         {
             if (Players.Count <= 1)

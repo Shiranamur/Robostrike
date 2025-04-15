@@ -107,11 +107,11 @@ namespace TestFinalCSharpProject
             // Position players exactly to create a guaranteed shot opportunity
             // Player 1 is right behind Player 2 and will shoot Player 2
             game.Players[0].X = 2;
-            game.Players[0].Y = 3;
+            game.Players[0].Y = 4;
             game.Players[0].Direction = 'N';
 
             game.Players[1].X = 2;
-            game.Players[1].Y = 1;
+            game.Players[1].Y = 3;
             game.Players[1].Direction = 'S';
 
             // Log player positions after setting them
@@ -126,9 +126,9 @@ namespace TestFinalCSharpProject
 
             // Submit moves for the forced scenario
             // Player 1: Shoot (should hit Player 2), then other moves
-            game.SubmitPlayerInput(1, "daaaaa");
+            game.SubmitPlayerInput(1, "zszzz");
             // Player 2: Shoot (should hit Player 1), then other moves
-            game.SubmitPlayerInput(2, "dzzzzz");
+            game.SubmitPlayerInput(2, "sszzzz");
 
             await Task.Delay(4000);
             
