@@ -346,20 +346,16 @@ namespace tiz_teh_final_csharp_project
                         IsAlive = p.IsAlive,
                         Health = p.health,
                         Damage_Taken = p.hit,
-                        Input = p.CurInput
+                        // todo Input = _roundInputs.GetValueOrDefault(currentTurn, p.Id),
+                        ShotHitPlayer = p.ShotHitPlayer,
                     };
                     
                     // Add collision data if exists for this player
-                    if (_currentTurnCollisions.TryGetValue(p.Id, out var collisionData))
+                    if (_currentTurnCollisions.ContainsKey(p.Id) && p.CollisionType != "")
                     {
-                        playerState.CollisionType = collisionData.type;
-                        playerState.CollisionWithId = collisionData.withId;
-                        playerState.CollisionCoordinates = collisionData.coordinates;
-                    }
-
-                    if (_currentTurnShots.TryGetValue(p.Id, out var shotData))
-                    {
-                        playerState.ShotHitPlayer = shotData;
+                        playerState.CollisionType = p.CollisionType;
+                        playerState.CollisionCoordinates = p.CollisionCoordinates;
+                        playerState.CollisionWithId = p.CollisionWithId;
                     }
                     
                     return playerState;
@@ -383,6 +379,10 @@ namespace tiz_teh_final_csharp_project
             {
                 player.XOld = player.X;
                 player.YOld = player.Y;
+                player.ShotHitPlayer = new Dictionary<int, Dictionary<int, int>>();
+                player.CollisionCoordinates = new Dictionary<int, int>();
+                player.CollisionType = "";
+                player.CollisionWithId = 0;
 
                 if (player.IsAlive)
                 {
