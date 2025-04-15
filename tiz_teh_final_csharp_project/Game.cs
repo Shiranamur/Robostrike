@@ -351,13 +351,14 @@ namespace tiz_teh_final_csharp_project
                         ShotHitPlayer = p.ShotHitPlayer
                     };
                     
-                    // Add collision data if exists for this player
-                    if (_currentTurnCollisions.ContainsKey(p.Id) && p.CollisionType != "")
+                    // Add collision data if exists for this player in the collision dictionary
+                    if (_currentTurnCollisions.TryGetValue(p.Id, out var collisionData))
                     {
-                        playerState.CollisionType = p.CollisionType;
-                        playerState.CollisionCoordinates = p.CollisionCoordinates;
-                        playerState.CollisionWithId = p.CollisionWithId;
+                        playerState.CollisionType = collisionData.type;
+                        playerState.CollisionCoordinates = collisionData.coordinates;
+                        playerState.CollisionWithId = collisionData.withId;
                     }
+
                     
                     return playerState;
                 }).ToList()
@@ -505,6 +506,7 @@ namespace tiz_teh_final_csharp_project
                 CurrentRound++;                
             }
             Console.WriteLine("Game Is finished");
+            GameOver = true;
             return true; // game is finished
         }
         
