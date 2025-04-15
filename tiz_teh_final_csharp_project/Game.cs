@@ -36,6 +36,7 @@ namespace tiz_teh_final_csharp_project
         public string CollisionType { get; set; }
         public Dictionary<int, int> CollisionCoordinates = new Dictionary<int, int>();
         public int CollisionWithId  { get; set;}
+        public char Input { get; set; }        
 
         public int Health { get; set; }
         public int Damage_Taken { get; set; }
@@ -344,7 +345,8 @@ namespace tiz_teh_final_csharp_project
                         Direction = p.Direction,
                         IsAlive = p.IsAlive,
                         Health = p.health,
-                        Damage_Taken = p.hit
+                        Damage_Taken = p.hit,
+                        Input = p.CurInput
                     };
                     
                     // Add collision data if exists for this player
@@ -376,7 +378,7 @@ namespace tiz_teh_final_csharp_project
             // Clear previous turn's shot data
             _currentTurnShots.Clear();
             _currentTurnCollisions.Clear();
-            
+
             foreach (var player in Players)
             {
                 player.XOld = player.X;
@@ -385,63 +387,41 @@ namespace tiz_teh_final_csharp_project
                 if (player.IsAlive)
                 {
                     ReadInput(player, turnInputs.GetValueOrDefault(player.Id, ' '), map);
-                    Console.WriteLine($"Player : {player.Id} has input : {turnInputs.GetValueOrDefault(player.Id, ' ')}");
+                    Console.WriteLine(
+                        $"Player : {player.Id} has input : {turnInputs.GetValueOrDefault(player.Id, ' ')}");
                 }
 
             }
-            
-            var processedCollisions = new HashSet<(int, int)>();
-
             foreach(var currentPlayer in Players)
             {
                 foreach(var otherPlayer in Players)
                 {
-                    if (currentPlayer.Id == otherPlayer.Id ||
-                        processedCollisions.Contains((currentPlayer.Id, otherPlayer.Id)) ||
-                        processedCollisions.Contains((otherPlayer.Id, currentPlayer.Id)))
-                        continue;
-
-                    // check if positions overlap
                     if (otherPlayer.X == currentPlayer.X && otherPlayer.Y == currentPlayer.Y)
                     {
-                        // Determine which player has push priority
-                        if (currentPlayer.Push > otherPlayer.Push && otherPlayer.Push == 0)
-                        {
-                            // current player pushes other player
-                            currentPlayer.HandleCollision(currentPlayer, otherPlayer, map, Players);
-                    
-                            // Record collision data for both players
-                            _currentTurnCollisions[currentPlayer.Id] = ("pusher", otherPlayer.Id, 
-                                new Dictionary<int, int> {{otherPlayer.X, otherPlayer.Y}});
-                            _currentTurnCollisions[otherPlayer.Id] = ("pushed", currentPlayer.Id, 
-                                new Dictionary<int, int> {{otherPlayer.X, otherPlayer.Y}});
-                        }
-                        
-                        else if (otherPlayer.Push > currentPlayer.Push && currentPlayer.Push == 0)
-                        {
-                            // other player has push priority
-                            otherPlayer.HandleCollision(otherPlayer, currentPlayer, map, Players);
-                            // Record collision data for both players
-                            _currentTurnCollisions[otherPlayer.Id] = ("pusher", currentPlayer.Id, 
-                                new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}});
-                            _currentTurnCollisions[currentPlayer.Id] = ("pushed", otherPlayer.Id, 
-                                new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}});
-                        }
+                        // skip checks with self player like player1 collision with player1
+                        if (currentPlayer.Id == otherPlayer.Id) continue;
 
-                        // Equal push - move both back to original positions
-                        currentPlayer.X = currentPlayer.XOld;
-                        currentPlayer.Y = currentPlayer.YOld;
-                        otherPlayer.X = otherPlayer.XOld;
-                        otherPlayer.Y = otherPlayer.YOld;
-                        
-                        // Record stalemate collision
-                        _currentTurnCollisions[currentPlayer.Id] = ("stalemate", otherPlayer.Id, 
-                            new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}});
-                        _currentTurnCollisions[otherPlayer.Id] = ("stalemate", currentPlayer.Id, 
-                            new Dictionary<int, int> {{otherPlayer.X, otherPlayer.Y}});
-
-                        // mark this collision as processed
-                        processedCollisions.Add((currentPlayer.Id, otherPlayer.Id));
+                        // Collision coordinates (where the collision happened)
+                        var collisionCoords = new Dictionary<int, int> {{currentPlayer.X, currentPlayer.Y}};
+    
+                        // Try to handle collision and check the result
+                        int result = currentPlayer.HandleCollision(currentPlayer, otherPlayer, map, Players);
+    
+                        if (result == 1) // Successful push
+                        {
+                            _currentTurnCollisions[currentPlayer.Id] = ("pusher", otherPlayer.Id, collisionCoords);
+                            _currentTurnCollisions[otherPlayer.Id] = ("pushed", currentPlayer.Id, collisionCoords);
+                        }
+                        else if (result == -1) // Other player has push priority
+                        {
+                            _currentTurnCollisions[otherPlayer.Id] = ("pusher", currentPlayer.Id, collisionCoords);
+                            _currentTurnCollisions[currentPlayer.Id] = ("pushed", otherPlayer.Id, collisionCoords);
+                        }
+                        else // result == 0, stalemate or failed push
+                        {
+                            _currentTurnCollisions[currentPlayer.Id] = ("stalemate", otherPlayer.Id, collisionCoords);
+                            _currentTurnCollisions[otherPlayer.Id] = ("stalemate", currentPlayer.Id, collisionCoords);
+                        }
                     }
                 }
             }

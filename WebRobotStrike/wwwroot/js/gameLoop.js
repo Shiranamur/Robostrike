@@ -139,7 +139,9 @@ function triggerFlashMessage() {
     if (!flashDiv) {
         console.error("Flash message element not found.");
         return;
-    }
+    }/**
+ * Triggers a flash message to indicate the input limit has been reached.
+ */
 
     flashDiv.classList.add("show");
 

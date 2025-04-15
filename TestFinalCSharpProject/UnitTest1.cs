@@ -87,7 +87,7 @@ namespace TestFinalCSharpProject
         public async Task TestCollisionsAndShots()
         {
             // Arrange - create a small map to increase chance of collisions
-            string mapPath = CreateSmallTestMap();
+            string mapPath = CreateTestMap();
             var players = new List<Player>
             {
                 new Player { Id = 1, health = 2 },
@@ -120,17 +120,18 @@ namespace TestFinalCSharpProject
             {
                 _testOutputHelper.WriteLine($"Player {player.Id}: ({player.X},{player.Y}) facing {player.Direction}");
             }
+            
+            // Act - run the game
+            var gameTask = game.StartGameAsync();
 
             // Submit moves for the forced scenario
             // Player 1: Shoot (should hit Player 2), then other moves
-            game.SubmitPlayerInput(1, "dzzzzz");
+            game.SubmitPlayerInput(1, "daaaaa");
             // Player 2: Shoot (should hit Player 1), then other moves
             game.SubmitPlayerInput(2, "dzzzzz");
 
-            // Act - run the game
-            var gameTask = game.StartGameAsync();
-            await Task.Delay(2000);
-
+            await Task.Delay(4000);
+            
             // Get the game state after round completion
             var gameStatus = new GameStatusResponse
             {
@@ -277,50 +278,115 @@ namespace TestFinalCSharpProject
                 }
             }
         }
-
-        private void PrintDetailedGameState(GameStatusResponse gameStatus)
+private void PrintDetailedGameState(GameStatusResponse gameStatus)
         {
             _testOutputHelper.WriteLine($"Game ID: {gameStatus.GameId}");
             _testOutputHelper.WriteLine($"Round: {gameStatus.CurrentRound}");
-            
-            _testOutputHelper.WriteLine("\nDetailed Turn States:");
+        
+            _testOutputHelper.WriteLine("\nDETAILED TURN-BY-TURN ANALYSIS:");
             foreach (var turn in gameStatus.RoundState.Turns)
             {
-                _testOutputHelper.WriteLine($"  Turn {turn.TurnNumber}:");
+                _testOutputHelper.WriteLine($"\n==== TURN {turn.TurnNumber} ====");
+                
+                // Print a summary first
+                _testOutputHelper.WriteLine("SUMMARY:");
                 foreach (var player in turn.Players)
                 {
-                    _testOutputHelper.WriteLine($"    Player {player.Id}:");
-                    _testOutputHelper.WriteLine($"      Position: ({player.X},{player.Y})");
-                    _testOutputHelper.WriteLine($"      Direction: {player.Direction}");
-                    _testOutputHelper.WriteLine($"      Health: {player.Health}");
-                    _testOutputHelper.WriteLine($"      Damage Taken: {player.Damage_Taken}");
-                    _testOutputHelper.WriteLine($"      Is Alive: {player.IsAlive}");
-
-                    // Print collision info if exists
-                    if (!string.IsNullOrEmpty(player.CollisionType))
-                    {
-                        _testOutputHelper.WriteLine($"      Collision: {player.CollisionType}");
-                        _testOutputHelper.WriteLine($"      Collision With: Player {player.CollisionWithId}");
-                        if (player.CollisionCoordinates != null && player.CollisionCoordinates.Count > 0)
-                        {
-                            _testOutputHelper.WriteLine($"      Collision Coordinates: ({string.Join(", ", player.CollisionCoordinates.Keys)}, {string.Join(", ", player.CollisionCoordinates.Values)})");
-                        }
-                    }
+                    string statusIndicator = player.IsAlive ? "🟢" : "🔴";
+                    string damageIndicator = player.Damage_Taken > 0 ? $"(-{player.Damage_Taken})" : "";
+                    string shotIndicator = player.ShotHitPlayer != null && player.ShotHitPlayer.Count > 0 ? "🎯" : "";
+                    string collisionIndicator = !string.IsNullOrEmpty(player.CollisionType) ? "💥" : "";
                     
-                    // Print shot hit info if exists
+                    _testOutputHelper.WriteLine($"  Player {player.Id}: {statusIndicator} Health: {player.Health}{damageIndicator} | Pos: ({player.X},{player.Y}) Dir: {player.Direction} {shotIndicator}{collisionIndicator}");
+                }
+                
+                // Now detailed player status
+                _testOutputHelper.WriteLine("\nDETAILED PLAYER STATUS:");
+                foreach (var player in turn.Players)
+                {
+                    _testOutputHelper.WriteLine($"  PLAYER {player.Id} STATUS:");
+                    _testOutputHelper.WriteLine($"    Position: ({player.X},{player.Y})");
+                    _testOutputHelper.WriteLine($"    Direction: {player.Direction}");
+                    _testOutputHelper.WriteLine($"    Health: {player.Health}/{(player.IsAlive ? "Alive" : "Dead")}");
+                    _testOutputHelper.WriteLine($"    Damage This Turn: {player.Damage_Taken}");
+                    
+                    // Shot tracking
+                    _testOutputHelper.WriteLine("    SHOTS:");
                     if (player.ShotHitPlayer != null && player.ShotHitPlayer.Count > 0)
                     {
-                        _testOutputHelper.WriteLine($"      Shot Hit: {string.Join(", ", player.ShotHitPlayer.Keys)} at coordinates:");
                         foreach (var target in player.ShotHitPlayer)
                         {
+                            _testOutputHelper.WriteLine($"      ✓ Hit Player {target.Key} at:");
                             foreach (var coord in target.Value)
                             {
-                                _testOutputHelper.WriteLine($"        Player {target.Key}: ({coord.Key}, {coord.Value})");
+                                _testOutputHelper.WriteLine($"        • ({coord.Key}, {coord.Value})");
                             }
                         }
                     }
+                    else
+                    {
+                        _testOutputHelper.WriteLine("      × No shots hit");
+                    }
+                    
+                    // Collision tracking
+                    _testOutputHelper.WriteLine("    COLLISIONS:");
+                    if (!string.IsNullOrEmpty(player.CollisionType))
+                    {
+                        _testOutputHelper.WriteLine($"      ✓ Type: {player.CollisionType}");
+                        if (player.CollisionWithId > 0)
+                        {
+                            _testOutputHelper.WriteLine($"      ✓ Collided with: Player {player.CollisionWithId}");
+                        }
+                        if (player.CollisionCoordinates != null && player.CollisionCoordinates.Count > 0)
+                        {
+                            foreach (var coord in player.CollisionCoordinates)
+                            {
+                                _testOutputHelper.WriteLine($"      ✓ At coordinates: ({coord.Key}, {coord.Value})");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _testOutputHelper.WriteLine("      × No collisions");
+                    }
                     
                     _testOutputHelper.WriteLine("");
+                }
+                
+                // Track action outcomes
+                _testOutputHelper.WriteLine("ACTION OUTCOMES:");
+                bool anyActions = false;
+                foreach (var player in turn.Players)
+                {
+                    if ((player.ShotHitPlayer != null && player.ShotHitPlayer.Count > 0) || 
+                        !string.IsNullOrEmpty(player.CollisionType))
+                    {
+                        anyActions = true;
+                        _testOutputHelper.WriteLine($"  Player {player.Id}:");
+                        
+                        if (player.ShotHitPlayer != null && player.ShotHitPlayer.Count > 0)
+                        {
+                            _testOutputHelper.WriteLine("    SHOT OUTCOMES:");
+                            foreach (var target in player.ShotHitPlayer)
+                            {
+                                _testOutputHelper.WriteLine($"    • Shot hit Player {target.Key}");
+                                // You could calculate damage here if needed
+                            }
+                        }
+                        
+                        if (!string.IsNullOrEmpty(player.CollisionType))
+                        {
+                            _testOutputHelper.WriteLine("    COLLISION OUTCOMES:");
+                            _testOutputHelper.WriteLine($"    • {player.CollisionType} collision" + 
+                                (player.CollisionWithId > 0 ? $" with Player {player.CollisionWithId}" : ""));
+                            // You could calculate collision effects here if needed
+                        }
+                    }
+                }
+                
+                if (!anyActions)
+                {
+                    _testOutputHelper.WriteLine("  No significant actions this turn");
                 }
             }
         }
