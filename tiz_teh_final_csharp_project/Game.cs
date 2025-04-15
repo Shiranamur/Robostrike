@@ -150,6 +150,10 @@ namespace tiz_teh_final_csharp_project
                 Players[i].Y = spacingY * (row + 1);
                 Players[i].Direction = 'S';  // Direction par défaut (Sud)
             }
+            for (int i = 0; i < Players.Count; i++)
+            {
+                Players[i].InGameId = i;
+            }
         }
         
         
@@ -168,6 +172,7 @@ namespace tiz_teh_final_csharp_project
                 players = this.Players.Select(p => new 
                 {
                     id = p.Id,
+                    inGameId = p.InGameId, 
                     x = p.X,
                     y = p.Y,
                     direction = p.Direction,

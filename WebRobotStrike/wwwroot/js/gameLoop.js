@@ -57,33 +57,33 @@ function renderMap(mapData) {
 function renderPlayers(players) {
     const mapDiv = document.getElementById("map");
     if (!mapDiv) return;
-    
-    // const existingPlayers = mapDiv.querySelectorAll(".player");
-    // existingPlayers.forEach(el => el.remove());
 
     players.forEach(player => {
         const playerEl = document.createElement("div");
+        const rotationValue = directionToRotation[player.direction.toLowerCase()] || "0deg";
+        console.log(player.direction);
+
         playerEl.classList.add("player");
         playerEl.style.position = "absolute";
         playerEl.style.width = "48px";
         playerEl.style.height = "48px";
-        
+
         playerEl.style.left = (player.x * 48) + "px";
         playerEl.style.top = (player.y * 48) + "px";
-        
-        playerEl.style.backgroundImage = `url('/images/Sprites/player${player.id}.png')`;
+
+        playerEl.style.backgroundImage = `url('/images/Sprites/player${player.inGameId}.png')`;
         playerEl.style.backgroundSize = "contain";
         playerEl.style.backgroundRepeat = "no-repeat";
         playerEl.style.backgroundPosition = "center";
-        
+
         playerEl.dataset.playerId = player.id;
-        
+        playerEl.style.transform = `rotate(${rotationValue})`;
+
         playerEl.style.transition = "left 0.8s ease, top 0.8s ease";
 
         mapDiv.appendChild(playerEl);
     });
 }
-
 
 function setupHud() {
     const hudTextArea = document.getElementById("hudTextArea");
@@ -181,54 +181,58 @@ function animateRound(roundJson) {
 function animateTurn(turn) {
     console.log("Animating turn:", turn.turnNumber);
 
-    // Process each player in the turn:
     if (Array.isArray(turn.players)) {
-        turn.players.forEach(playerState => {
-            // Find the DOM element corresponding to this player.
-            // Assuming players have been rendered with a data attribute "data-player-id"
-            let playerEl = document.querySelector(`.player[data-player-id="${playerState.id}"]`);
-            if (playerEl) {
-                // Calculate new positions. Assume each cell is 48px.
-                let newLeft = playerState.x * 48;
-                let newTop = playerState.y * 48;
-
-                // Animate movement using a CSS transition, for example:
-                playerEl.style.transition = "left 0.8s ease, top 0.8s ease";
-                playerEl.style.left = newLeft + "px";
-                playerEl.style.top = newTop + "px";
-
-                // Optionally, update other properties (like rotation/direction) or trigger CSS classes for shots.
-                // For example, if a shot occurred, you might add a class:
-                // if (playerState.ShotHitPlayer && Object.keys(playerState.ShotHitPlayer).length > 0) {
-                //     playerEl.classList.add("shot-fired");
-                //     setTimeout(() => { playerEl.classList.remove("shot-fired"); }, 800);
-                // }
-            } else {
-                console.warn("Player element not found for ID:", playerState.id);
-            }
+        turn.players.forEach(player => {
+            updatePlayerState(player);
         });
     }
+
+    // You can add extra handling here for other events (shots, collisions, etc.)
 }
 
+function updatePlayerState(player) {
+    // Retrieve the player's element by its data attribute.
+    let playerEl = document.querySelector(`.player[data-player-id="${player.id}"]`);
+    if (!playerEl) {
+        console.warn("Player element not found for ID:", player.id);
+        return;
+    }
+
+    // Calculate new position (assume each cell is 48px).
+    const newLeft = player.x * 48;
+    const newTop  = player.y * 48;
+
+    // Lookup the rotation angle from the dictionary.
+    const rotationValue = directionToRotation[player.direction.toLowerCase()] || "0deg";
+
+    // Update styles. CSS transitions (set in your CSS) will animate these changes.
+    playerEl.style.left = newLeft + "px";
+    playerEl.style.top = newTop + "px";
+    playerEl.style.transform = `rotate(${rotationValue})`;
+}
 
 function animateShot(shotData) {
     // Example:
     const shotEl = document.createElement("div");
     shotEl.classList.add("shot");
     document.body.appendChild(shotEl);
-
-    // Set the shot's starting position based on shotData
+    
     shotEl.style.left = shotData.startX + "px";
     shotEl.style.top = shotData.startY + "px";
-
-    // Animate the shot to its destination over 800ms.
+    
     setTimeout(() => {
         shotEl.style.left = shotData.endX + "px";
         shotEl.style.top = shotData.endY + "px";
     }, 100);
-
-    // Remove the shot element after the animation completes.
+    
     setTimeout(() => {
         shotEl.remove();
     }, 1000);
 }
+
+const directionToRotation = {
+    'n': '0deg',
+    's': '180deg',
+    'e': '90deg',
+    'w': '270deg',
+};

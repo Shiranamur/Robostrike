@@ -11,21 +11,33 @@
 <div id="game-container">
     <!-- Map container -->
     <div id="map"></div>
-
-    <textarea id="hudTextArea" @bind="PlayerCommands" maxlength="6"></textarea>
-    <div id="hudButtons">
-        <button id="rotateLeftBtn">Rotate Left</button>
-        <button id="rotateRightBtn">Rotate Right</button>
-        <button id="forwardBtn">Forward</button>
-        <button id="reverseBtn">Reverse</button>
-        <button id="shootBtn">Shoot</button>
-        <button id="deleteBtn">Delete</button>
-        <button id="sendBtn" @onclick="SendPlayerInput">Send</button>
-        <div id="countdownTimer">Time left: @CountDown seconds</div>
-    </div>
-    <div id="flashMessage" class="flash">Input limit reached!</div>
+    
+<!--    @if (!IsGameOver)-->
+    {
+        <textarea id="hudTextArea" @bind="PlayerCommands" maxlength="6"></textarea>
+        <div id="hudButtons">
+            <button id="rotateLeftBtn">Rotate Left</button>
+            <button id="rotateRightBtn">Rotate Right</button>
+            <button id="forwardBtn">Forward</button>
+            <button id="reverseBtn">Reverse</button>
+            <button id="shootBtn">Shoot</button>
+            <button id="deleteBtn">Delete</button>
+            <button id="sendBtn" @onclick="SendPlayerInput">Send</button>
+            <div id="countdownTimer">Time left: @CountDown seconds</div>
+        </div>
+        <div id="flashMessage" class="flash">Input limit reached!</div>
+    }
+<!--    else
+    {
+        <button class="btn btn-primary" @onclick="ReturnToHub">
+            Return to Hub
+        </button>
+    } -->
 
 </div>
+
+
+
 
 
 @code {
@@ -53,6 +65,7 @@
     public class Player
     {
         public int id { get; set; }
+        public int inGameId { get; set; }
         public int x { get; set; }
         public int y { get; set; }
         public string direction { get; set; }
@@ -64,6 +77,7 @@
     private int CountDown { get; set; } = 10; // For example, 10-second countdown
     private CancellationTokenSource pollingCts = new CancellationTokenSource();
     private int _lastProcessedRound = -1;
+    private bool isGameOver = false;
     
     private async Task SendPlayerInput()
     {
@@ -80,7 +94,7 @@
         PlayerCommands = await JS.InvokeAsync<string>("eval", "document.getElementById('hudTextArea').value");
         Console.WriteLine($"playerCommands : {PlayerCommands}");
 
-        string url = $"http://localhost:5181/api/game/{gameId}/inputs";
+        string url = $"http://localhost:5000/api/game/{gameId}/inputs";
         var request = new HttpRequestMessage(HttpMethod.Put, url)
         {
             Content = new StringContent(JsonSerializer.Serialize(PlayerCommands), Encoding.UTF8, "application/json")
@@ -117,7 +131,7 @@ private async Task PollGameStatus(string gameId, CancellationToken token)
     {
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5181/api/game/{gameId}/status");
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5000/api/game/{gameId}/status");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
             
             var response = await Http.SendAsync(request, token);

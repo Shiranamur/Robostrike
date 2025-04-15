@@ -5,6 +5,8 @@ namespace tiz_teh_final_csharp_project
     public class Player
     {
         public int Id { get; set; }
+        
+        public int InGameId { get; set; } 
         public int X { get; set; }
         public int Y { get; set; }
         public char Direction { get; set; }

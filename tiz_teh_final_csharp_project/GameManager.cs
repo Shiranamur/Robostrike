@@ -52,9 +52,21 @@ public class GameManager
         }
         
         _queueManager.RemovePlayers(playersIds);
-        _ = Task.Run(() => game.StartGameAsync());
+        var startGameTask = Task.Run(() => game.StartGameAsync());
 
-        
+        startGameTask.ContinueWith(t =>
+        {
+            if (t.Result == true)
+            {
+                lock (_activeGames)
+                {
+                    _activeGames.Remove(matchId);
+                }
+
+                Console.WriteLine($"Game {matchId} finished and was removed from _activeGames.");
+            }
+        });
+
         await NotifyPlayersAsync(playersIds, game);
     }
     
