@@ -99,7 +99,7 @@ public class GameEndpoints : IEndpointMapper
             try
             { 
                 // returns the gamestate
-                return Results.Ok(new { Status = new { Round = game.GetCurrentRoundState() } });
+                return Results.Ok(new { Status = new { Round = game.GetCurrentRoundState(), GameOver = game.GameOver } });
                 Console.WriteLine();
             }
             catch (Exception ex)
