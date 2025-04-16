@@ -1,9 +1,12 @@
 @page "/game"
 @using System.Text
 @using System.Text.Json
+@using System.Threading
+@using System.Threading.Tasks
 @inject IJSRuntime JS
 @inject HttpClient Http
-@inject NavigationManager Nav
+@inject NavigationManager NavigationManager
+@implements IDisposable
 @rendermode InteractiveServer
 
 <h3>Match ID: @gameData?.matchId</h3>
@@ -11,8 +14,8 @@
 <div id="game-container">
     <!-- Map container -->
     <div id="map"></div>
-    
-<!--    @if (!IsGameOver)-->
+
+    @if (!IsGameOver)
     {
         <textarea id="hudTextArea" @bind="PlayerCommands" maxlength="6"></textarea>
         <div id="hudButtons">
@@ -27,18 +30,13 @@
         </div>
         <div id="flashMessage" class="flash">Input limit reached!</div>
     }
-<!--    else
+    else
     {
         <button class="btn btn-primary" @onclick="ReturnToHub">
             Return to Hub
         </button>
-    } -->
-
+    }
 </div>
-
-
-
-
 
 @code {
     public class Tile
@@ -47,21 +45,21 @@
         public int y { get; set; }
         public string Type { get; set; }
     }
-    
+
     public class MapData
     {
         public int map_width { get; set; }
         public int map_height { get; set; }
         public List<Tile> tiles { get; set; }
     }
-    
+
     public class GameData
     {
         public string matchId { get; set; }
         public MapData map { get; set; }
         public List<Player> players { get; set; }
     }
-    
+
     public class Player
     {
         public int id { get; set; }
@@ -70,136 +68,185 @@
         public int y { get; set; }
         public string direction { get; set; }
         public string curInput { get; set; }
-        // Additional properties needed
     }
-
-    private string PlayerCommands { get; set; } = "";
-    private int CountDown { get; set; } = 10; // For example, 10-second countdown
-    private CancellationTokenSource pollingCts = new CancellationTokenSource();
-    private int _lastProcessedRound = -1;
-    private bool isGameOver = false;
     
+    private GameData gameData;
+    private string PlayerCommands { get; set; } = "";
+    private int CountDown { get; set; } = 10;
+    private bool IsGameOver = false;
+    private int _lastProcessedRound = -1;
+    
+    private PeriodicTimer _timer;
+    private CancellationTokenSource _cts;
+    
+    
+    /// <summary>
+    /// Reads the player’s HUD commands from the textarea, sends them to the server via an HTTP PUT
+    /// to /api/game/{matchId}/inputs, and clears the input box on success.
+    /// </summary>
     private async Task SendPlayerInput()
     {
         var gameId = gameData?.matchId;
         var sessionToken = await JS.InvokeAsync<string>("localStorage.getItem", "sessionToken");
-
         if (string.IsNullOrEmpty(gameId) || string.IsNullOrEmpty(sessionToken))
         {
-            Console.WriteLine("Missing game ID or session token.");
+            //Console.WriteLine("Missing game ID or session token.");
             return;
         }
+        
+        PlayerCommands = await JS.InvokeAsync<string>(
+            "eval", "document.getElementById('hudTextArea').value");
+        //Console.WriteLine($"playerCommands : {PlayerCommands}");
 
-        // Fetch value from textarea manually to override stale `PlayerCommands`
-        PlayerCommands = await JS.InvokeAsync<string>("eval", "document.getElementById('hudTextArea').value");
-        Console.WriteLine($"playerCommands : {PlayerCommands}");
-
-        string url = $"http://localhost:5000/api/game/{gameId}/inputs";
+        var url = $"http://localhost:5181/api/game/{gameId}/inputs";
         var request = new HttpRequestMessage(HttpMethod.Put, url)
         {
-            Content = new StringContent(JsonSerializer.Serialize(PlayerCommands), Encoding.UTF8, "application/json")
+            Content = new StringContent(
+                JsonSerializer.Serialize(PlayerCommands),
+                Encoding.UTF8,
+                "application/json")
         };
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
 
         try
         {
             var response = await Http.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Server response: " + await response.Content.ReadAsStringAsync());
+                //Console.WriteLine("Server response: " + await response.Content.ReadAsStringAsync());
                 PlayerCommands = "";
                 StateHasChanged();
-                _ = PollGameStatus(gameId, pollingCts.Token);
             }
             else
             {
-                Console.WriteLine("Failed to send input: " + response.StatusCode);
+                //Console.WriteLine("Failed to send input: " + response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Exception sending input: " + ex.Message);
+            //Console.WriteLine("Exception sending input: " + ex.Message);
         }
     }
 
-private async Task PollGameStatus(string gameId, CancellationToken token)
-{
-    Console.WriteLine("Started polling game status for gameId: " + gameId);
-    var sessionToken = await JS.InvokeAsync<string>("localStorage.getItem", "sessionToken");
     
-    while (!token.IsCancellationRequested)
+    /// <summary>
+    /// Continuously polls the game‐status endpoint every 2 seconds using a PeriodicTimer.
+    /// </summary>
+    /// <param name="token">A cancellation token to stop polling when requested or when the game ends.</param>
+    private async Task RunStatusLoop(CancellationToken token)
     {
-        try
+        var sessionToken = await JS.InvokeAsync<string>("localStorage.getItem", "sessionToken");
+
+        while (await _timer.WaitForNextTickAsync(token)
+               && !token.IsCancellationRequested
+               && !IsGameOver)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5000/api/game/{gameId}/status");
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
-            
-            var response = await Http.SendAsync(request, token);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var jsonString = await response.Content.ReadAsStringAsync(token);
-                Console.WriteLine("Polling response: " + jsonString);
-                
-                using var roundResult = JsonDocument.Parse(jsonString);
-                if (roundResult.RootElement.TryGetProperty("status", out var statusEl) &&
-                    statusEl.TryGetProperty("round", out var roundEl))
+                using var request = new HttpRequestMessage(
+                    HttpMethod.Get,
+                    $"http://localhost:5181/api/game/{gameData.matchId}/status");
+                request.Headers.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
+
+                var response = await Http.SendAsync(request, token);
+                if (!response.IsSuccessStatusCode)
                 {
-                    int roundNumber = 0;
-                    if (roundEl.TryGetProperty("roundNumber", out var roundNumberEl))
-                        roundNumber = roundNumberEl.GetInt32();
-
-                    bool hasTurns = roundEl.TryGetProperty("turns", out var turnsEl) &&
-                                    turnsEl.ValueKind == JsonValueKind.Array &&
-                                    turnsEl.GetArrayLength() > 0;
-
-                    Console.WriteLine($"Received roundNumber: {roundNumber}, hasTurns: {hasTurns}");
-                    
-                    if (hasTurns && roundNumber > _lastProcessedRound)
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                     {
-                        var roundJson = roundEl.GetRawText();
-                        _lastProcessedRound = roundNumber;
-                        await JS.InvokeVoidAsync("animateRound", roundJson);
                         break;
                     }
-                    else
+                    continue;
+                }
+
+                var jsonString = await response.Content.ReadAsStringAsync(token);
+                using var doc = JsonDocument.Parse(jsonString);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out var statusEl))
+                {
+                    if (statusEl.TryGetProperty("gameOver", out var goEl))
                     {
-                        Console.WriteLine("Round not complete or same round, continuing to poll...");
+                        var over = (goEl.ValueKind == JsonValueKind.True)
+                                   || (goEl.ValueKind == JsonValueKind.String
+                                       && bool.TryParse(goEl.GetString(), out var parsed)
+                                       && parsed);
+                        if (over)
+                        {
+                            IsGameOver = true;
+                            await InvokeAsync(StateHasChanged);
+                            //Console.WriteLine("Game Over detected");
+                            await JS.InvokeVoidAsync("onGameOver");
+                            break;
+                        }
+                    }
+
+                    // ---- round animation ----
+                    if (statusEl.TryGetProperty("round", out var roundEl))
+                    {
+                        int roundNumber = 0;
+                        if (roundEl.TryGetProperty("roundNumber", out var rnEl))
+                            roundNumber = rnEl.GetInt32();
+
+                        var hasTurns = roundEl.TryGetProperty("turns", out var tEl)
+                                       && tEl.ValueKind == JsonValueKind.Array
+                                       && tEl.GetArrayLength() > 0;
+
+                        //Console.WriteLine($"Received roundNumber: {roundNumber}, hasTurns: {hasTurns}");
+
+                        if (hasTurns && roundNumber > _lastProcessedRound)
+                        {
+                            _lastProcessedRound = roundNumber;
+                            var roundJson = roundEl.GetRawText();
+                            await JS.InvokeVoidAsync("animateRound", roundJson);
+                        }
                     }
                 }
                 else
                 {
-                    Console.WriteLine("No valid round output, continuing to poll...");
+                    //Console.WriteLine("No valid status object");
                 }
             }
-            else
+            catch (OperationCanceledException)
             {
-                Console.WriteLine("Polling request failed: " + response.StatusCode);
+                // normal when we cancel
+                break;
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine("Exception in polling loop: " + ex.Message);
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Exception while polling: " + ex.Message);
-        }
-        await Task.Delay(2000, token);
     }
-}
-
-
-
-
-    private GameData gameData;
     
+    
+    /// <summary>
+    /// Performs first‐render setup: loads initial game data from local storage, starts the JS game loop,
+    /// and initializes the background polling timer.
+    /// </summary>
+    /// <param name="firstRender">True if this is the first time the component has rendered.</param>
+    /// <returns>A task that completes after the initial setup is done.</returns>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            gameData = await JS.InvokeAsync<GameData>("window.localStore.getJson", "initialGameData");
-            StateHasChanged();
-            
-            await JS.InvokeVoidAsync("startGameLoop", gameData);
-        }
+        if (!firstRender) return;
+        
+        gameData = await JS.InvokeAsync<GameData>(
+            "window.localStore.getJson", "initialGameData");
+        StateHasChanged();
+        await JS.InvokeVoidAsync("startGameLoop", gameData);
+        
+        _cts = new CancellationTokenSource();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        _ = RunStatusLoop(_cts.Token);
     }
-    
+
+    /// <summary>
+    /// Drives the on‑screen countdown UI between player turns, decrementing the counter once per second
+    /// until it reaches zero.
+    /// </summary>
+    /// <param name="duration">The starting countdown duration in seconds.</param>
+    /// <returns>A task that completes when the countdown reaches zero.</returns>
     private async Task StartCountdownTimer(int duration)
     {
         CountDown = duration;
@@ -209,7 +256,15 @@ private async Task PollGameStatus(string gameId, CancellationToken token)
             CountDown--;
             StateHasChanged();
         }
-        Console.WriteLine("Countdown timer finished");
-        // Optionally, auto-send inputs when time runs out.
+        //Console.WriteLine("Countdown timer finished");
+    }
+
+    private void ReturnToHub()
+        => NavigationManager.NavigateTo("/hub");
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _timer?.Dispose();
     }
 }

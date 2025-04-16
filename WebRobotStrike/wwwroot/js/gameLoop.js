@@ -236,3 +236,7 @@ const directionToRotation = {
     'e': '90deg',
     'w': '270deg',
 };
+
+function onGameOver(){
+    var isgameover = true;
+}

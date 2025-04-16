@@ -54,10 +54,11 @@ public class GameManager
         _queueManager.RemovePlayers(playersIds);
         var startGameTask = Task.Run(() => game.StartGameAsync());
 
-        startGameTask.ContinueWith(t =>
+        startGameTask.ContinueWith(async t =>
         {
             if (t.Result == true)
             {
+                await Task.Delay(TimeSpan.FromSeconds(15));
                 lock (_activeGames)
                 {
                     _activeGames.Remove(matchId);
