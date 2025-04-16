@@ -1,0 +1,81 @@
+﻿@page "/register"
+@inject BlazorApp1.UsersServices.UsersService UsersService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow p-4" style="max-width: 500px; width: 100%;">
+        <h3 class="text-center mb-4">Register</h3>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <form @onsubmit="HandleSubmit">
+            <div class="form-floating mb-3">
+                <input @bind="username" class="form-control" id="registerUsername" placeholder="Username" />
+                <label for="registerUsername">Username</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input @bind="email" type="email" class="form-control" id="registerEmail" placeholder="Email" />
+                <label for="registerEmail">Email</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" @bind="password" class="form-control" id="registerPassword" placeholder="Password" />
+                <label for="registerPassword">Password</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" @bind="confirmPassword" class="form-control" id="registerConfirmPassword" placeholder="Confirm Password" />
+                <label for="registerConfirmPassword">Confirm Password</label>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">Sing up</button>
+        </form>
+    </div>
+</div>
+
+
+@code {
+    private string username;
+    private string email;
+    private string password;
+    private string confirmPassword;
+    private string errorMessage = "";
+
+    private async Task HandleRegister()
+    {
+        if (password != confirmPassword)
+        {
+            errorMessage = "Les mots de passe ne correspondent pas.";
+            return;
+        }
+
+        var existingUser = await UsersService.TestUsername(username);
+        if (existingUser)
+        {
+            errorMessage = "Ce nom d'utilisateur est déjà pris.";
+            return;
+        }
+
+        var salt = Guid.NewGuid().ToString();
+
+        var passwordHash = Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(password + salt))
+        );
+
+        await UsersService.New_User(username, email, false, passwordHash, salt, 0);
+
+        errorMessage = "";
+        Navigation.NavigateTo("/login");
+    }
+    private async Task HandleSubmit()
+    {
+        await HandleRegister();
+    }
+
+}
