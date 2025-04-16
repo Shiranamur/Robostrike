@@ -181,53 +181,102 @@ function animateRound(roundJson) {
 function animateTurn(turn) {
     console.log("Animating turn:", turn.turnNumber);
 
-    if (Array.isArray(turn.players)) {
-        turn.players.forEach(player => {
-            updatePlayerState(player);
-        });
-    }
-
-    // You can add extra handling here for other events (shots, collisions, etc.)
+    if (!Array.isArray(turn.players)) return;
+    
+    turn.players.forEach(shooter => {
+        if (shooter.input === "d") {
+            // find the victim of this shot, if any
+            const victim = turn.players.find(p => p.damage_Taken > 0);
+            const target = victim || getCellAhead(shooter);
+            animateShot(shooter, target);
+        }
+    });
+    
+    turn.players.forEach(player => {
+        updatePlayerState(player);
+    });
+}
+function getCellAhead(player) {
+    const dir = player.direction.toLowerCase();
+    const dx = dir === 'e' ? 1 : dir === 'w' ? -1 : 0;
+    const dy = dir === 's' ? 1 : dir === 'n' ? -1 : 0;
+    return { x: player.x + dx, y: player.y + dy };
 }
 
+
 function updatePlayerState(player) {
-    // Retrieve the player's element by its data attribute.
     let playerEl = document.querySelector(`.player[data-player-id="${player.id}"]`);
     if (!playerEl) {
         console.warn("Player element not found for ID:", player.id);
         return;
     }
-
-    // Calculate new position (assume each cell is 48px).
+    
     const newLeft = player.x * 48;
     const newTop  = player.y * 48;
-
-    // Lookup the rotation angle from the dictionary.
+    
     const rotationValue = directionToRotation[player.direction.toLowerCase()] || "0deg";
-
-    // Update styles. CSS transitions (set in your CSS) will animate these changes.
+    
     playerEl.style.left = newLeft + "px";
     playerEl.style.top = newTop + "px";
     playerEl.style.transform = `rotate(${rotationValue})`;
 }
 
-function animateShot(shotData) {
-    // Example:
+/**
+ * Animate a plasma shot from shooter to target cell.
+ * Uses plasma1.png or plasma2.png as the sprite.
+ */
+function animateShot(shooter, target) {
+    const mapDiv = document.getElementById("map");
     const shotEl = document.createElement("div");
     shotEl.classList.add("shot");
-    document.body.appendChild(shotEl);
     
-    shotEl.style.left = shotData.startX + "px";
-    shotEl.style.top = shotData.startY + "px";
+    //const sprite = Math.random() < 0.5 ? "plasma1.png" : "plasma2.png";
+    shotEl.style.backgroundImage = `url('/images/Sprites/plasma1.png')`;
     
-    setTimeout(() => {
-        shotEl.style.left = shotData.endX + "px";
-        shotEl.style.top = shotData.endY + "px";
-    }, 100);
+    const SHOT_SIZE = 40;
+    shotEl.style.width  = `${SHOT_SIZE}px`;
+    shotEl.style.height = `${SHOT_SIZE}px`;
+    shotEl.style.transformOrigin = "center center";
+    const angle = directionToRotation[shooter.direction.toLowerCase()] || "0deg";
+    shotEl.style.transform = `rotate(${angle})`;
+    
+    const startX = shooter.x * 48 + (48 - SHOT_SIZE) / 2;
+    const startY = shooter.y * 48 + (48 - SHOT_SIZE) / 2;
+    shotEl.style.left = `${startX}px`;
+    shotEl.style.top  = `${startY}px`;
+
+    mapDiv.appendChild(shotEl);
+    
+    const endX = target.x * 48 + (48 - SHOT_SIZE) / 2;
+    const endY = target.y * 48 + (48 - SHOT_SIZE) / 2;
+    
+    const travelTime = 500; // ms
+    requestAnimationFrame(() => {
+        shotEl.style.transition = `left ${travelTime}ms linear, top ${travelTime}ms linear`;
+        shotEl.style.left = `${endX}px`;
+        shotEl.style.top  = `${endY}px`;
+    });
     
     setTimeout(() => {
         shotEl.remove();
-    }, 1000);
+        animateBoom(target);
+    }, travelTime + 50);
+}
+
+/**
+ * Flash an explosion on the cell of the player who got hit.
+ */
+function animateBoom(victim) {
+    const boomEl = document.createElement("div");
+    boomEl.classList.add("boom");
+    boomEl.style.backgroundImage = "url('/images/Sprites/boom1.png')";
+    boomEl.style.left = victim.x * 48 + "px";
+    boomEl.style.top  = victim.y * 48 + "px";
+
+    const mapDiv = document.getElementById("map");
+    mapDiv.appendChild(boomEl);
+    
+    setTimeout(() => boomEl.remove(), 500);
 }
 
 const directionToRotation = {

@@ -26,7 +26,6 @@
             <button id="shootBtn">Shoot</button>
             <button id="deleteBtn">Delete</button>
             <button id="sendBtn" @onclick="SendPlayerInput">Send</button>
-            <div id="countdownTimer">Time left: @CountDown seconds</div>
         </div>
         <div id="flashMessage" class="flash">Input limit reached!</div>
     }
@@ -151,6 +150,7 @@
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionToken);
 
                 var response = await Http.SendAsync(request, token);
+                //Console.WriteLine($"{response}");
                 if (!response.IsSuccessStatusCode)
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -181,8 +181,7 @@
                             break;
                         }
                     }
-
-                    // ---- round animation ----
+                    
                     if (statusEl.TryGetProperty("round", out var roundEl))
                     {
                         int roundNumber = 0;
@@ -192,8 +191,7 @@
                         var hasTurns = roundEl.TryGetProperty("turns", out var tEl)
                                        && tEl.ValueKind == JsonValueKind.Array
                                        && tEl.GetArrayLength() > 0;
-
-                        //Console.WriteLine($"Received roundNumber: {roundNumber}, hasTurns: {hasTurns}");
+                        
 
                         if (hasTurns && roundNumber > _lastProcessedRound)
                         {
@@ -220,7 +218,6 @@
         }
     }
     
-    
     /// <summary>
     /// Performs first‐render setup: loads initial game data from local storage, starts the JS game loop,
     /// and initializes the background polling timer.
@@ -239,24 +236,6 @@
         _cts = new CancellationTokenSource();
         _timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
         _ = RunStatusLoop(_cts.Token);
-    }
-
-    /// <summary>
-    /// Drives the on‑screen countdown UI between player turns, decrementing the counter once per second
-    /// until it reaches zero.
-    /// </summary>
-    /// <param name="duration">The starting countdown duration in seconds.</param>
-    /// <returns>A task that completes when the countdown reaches zero.</returns>
-    private async Task StartCountdownTimer(int duration)
-    {
-        CountDown = duration;
-        while (CountDown > 0)
-        {
-            await Task.Delay(1000);
-            CountDown--;
-            StateHasChanged();
-        }
-        //Console.WriteLine("Countdown timer finished");
     }
 
     private void ReturnToHub()

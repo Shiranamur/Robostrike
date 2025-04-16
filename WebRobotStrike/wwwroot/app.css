@@ -1,8 +1,20 @@
+:root {
+    /* Dark base */
+    --bg-dark: #0D0D2B;
+    --bg-mid:  #13133D;
+    --fg-light: #F0F0F5;
+
+    /* Neon accents */
+    --neon-teal:  #39FF14;
+    --neon-pink:  #FF217F;
+    --neon-blue:  #00D4FF;
+    --neon-orange: #FF9F1C;
+}
 
 html, body {
-    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: #f9fafb;
-    color: #212529;
+    font-family: 'Orbitron', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--fg-light);
     margin: 0;
     padding: 0;
     height: 100%;
@@ -315,8 +327,42 @@ a, .btn-link {
     opacity: 1;
 }
 
-
-/* When active, set opacity to full */
 .flash.show {
     opacity: 1;
+}
+
+.shot {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.boom {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation: boom-fade 0.6s forwards;
+    pointer-events: none;
+    z-index: 20;
+}
+
+@keyframes boom-fade {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(2);
+    }
+}
+
+
+@keyframes boom-fade {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(1.5); }
 }

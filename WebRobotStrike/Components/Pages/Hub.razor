@@ -90,7 +90,6 @@ private async Task PollMatchStatus(CancellationToken token)
     {
         try
         {
-            // 1. Get the bearer token
             var localToken = await GetTokenAsync();
             if (string.IsNullOrWhiteSpace(localToken))
             {
@@ -99,15 +98,13 @@ private async Task PollMatchStatus(CancellationToken token)
                 isInQueue = false;
                 return;
             }
-
-            // 2. Prepare the request
+            
             var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5181/api/matchmaking/status");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", localToken);
 
             statusMessage += "\n[Debug] GET /api/matchmaking/status with Bearer token...";
             StateHasChanged();
-
-            // 3. Send the request
+            
             var resp = await Http.SendAsync(request, token);
             if (!resp.IsSuccessStatusCode)
             {
@@ -116,41 +113,33 @@ private async Task PollMatchStatus(CancellationToken token)
                 isInQueue = false;
                 return;
             }
-
-            // 4. Parse the JSON
+            
             var jsonString = await resp.Content.ReadAsStringAsync(token);
             statusMessage += $"\n[Debug] Poll response: {jsonString}";
             StateHasChanged();
-
-            // Expected JSON structure: 
-            //   {"status": { "map": {...}, "players":[...], "matchId":"..." }} or {"status":"No updates"}
+            
             using var doc = JsonDocument.Parse(jsonString);
 
             if (doc.RootElement.TryGetProperty("status", out var statusEl))
             {
                 if (statusEl.ValueKind == JsonValueKind.Object)
                 {
-                    // 5. Found an object => likely means "matchId" is present
                     if (statusEl.TryGetProperty("matchId", out var midEl))
                     {
                         var matchId = midEl.GetString();
                         if (!string.IsNullOrEmpty(matchId))
                         {
-                            // 6. Deserialize the status element to a .NET object
                             var statusObject = JsonSerializer.Deserialize<object>(statusEl.GetRawText());
                             
-                            // Use JS interop to store the data via your helper:
                             await JS.InvokeVoidAsync("window.localStore.setJson", "initialGameData", statusObject);
 
                             statusMessage += $"\n[Debug] Match found: {matchId}. Navigating to /game/{matchId}";
                             StateHasChanged();
-
-                            // Mark ourselves as no longer in queue
+                            
                             isInQueue = false;
-
-                            // 7. Navigate to the game page
+                            
                             Nav.NavigateTo($"/game");
-                            return; // exit the loop
+                            return;
                         }
                     }
                     else
@@ -161,7 +150,6 @@ private async Task PollMatchStatus(CancellationToken token)
                 }
                 else
                 {
-                    // Could be "No updates" or "Request canceled"
                     var str = statusEl.GetString();
                     if (str?.Contains("No updates") == true)
                     {
@@ -182,8 +170,7 @@ private async Task PollMatchStatus(CancellationToken token)
                     }
                 }
             }
-
-            // Wait a bit before polling again
+            
             await Task.Delay(2000, token);
         }
         catch (TaskCanceledException)
