@@ -1,4 +1,4 @@
-# **Nom du projet**
+# **ROBOSTRIKE**
 
 > Prototype de jeu web tactique inspiré de **RoboStrike**, développé en **C# / ASP.NET Core**. Le dépôt illustre la conception d’un moteur tour‑par‑tour, l’architecture client‑serveur en temps quasi‑réel, ainsi que les bonnes pratiques de développement modernes en .NET.
 
@@ -18,16 +18,16 @@ Ce dépôt rassemble le code source d’un **prototype académique** réalisé d
 
 ## 2. Fonctionnalités clés
 
-| État | Fonctionnalité                | Description                                                                 |
-| ---- | ----------------------------- | --------------------------------------------------------------------------- |
-| ✅    | Système de comptes            | Inscription, connexion et gestion de session JWT                            |
-| ✅    | File d’attente de matchmaking | Aligne les joueurs puis démarre la partie dès que le quorum est atteint     |
-| ✅    | Moteur de jeu côté serveur    | Agrège les inputs, résout la logique du tour, renvoie l’état consolidé      |
-| ✅    | Transmission temps réel       | API REST + WebSocket/SignalR pour diffuser le nouvel état à chaque tour     |
-| ✅    | Rendu & animations client     | Script JS interprétant l’état reçu et jouant les animations Canvas          |
+| État | Fonctionnalité                | Description                                                                       |
+| ---- |-------------------------------|-----------------------------------------------------------------------------------|
+| ✅    | Système de comptes            | Inscription, connexion et gestion de session JWT                                  |
+| ✅    | File d’attente de matchmaking | Aligne les joueurs puis démarre la partie dès que le quorum est atteint           |
+| ✅    | Moteur de jeu côté serveur    | Agrège les inputs, résout la logique du tour, renvoie l’état consolidé            |
+| ✅    | Transmission temps réel       | API REST + WebSocket/SignalR pour diffuser le nouvel état à chaque tour           |
+| ✅    | Rendu & animations client     | Script JS interprétant l’état reçu et jouant les animations Canvas                |
 | 🔧   | Fin de partie                 | **Conditions de victoire alternatives** (score, élimination…) au‑delà des 6 tours |
-| 🔧   | IA basique                    | Robot adversaire pour jouer hors‑ligne                                      |
-| 🔧   | Tableau de scores persistant  | Stockage SQLite / MariaDB + endpoint `/api/scores`                          |
+| 🔧   | Un site propre                | Vous comprendrez une fois que le site est lancé                                   |
+| 🔧   | Tableau de scores persistant  | Stockage SQLite / MariaDB + endpoint `/api/scores`                                |
 
 ---
 
@@ -37,7 +37,7 @@ Ce dépôt rassemble le code source d’un **prototype académique** réalisé d
 
 - **.NET SDK ≥ 9.0 (pré‑version)** – téléchargeable sur <https://dotnet.microsoft.com>.
 - **MariaDB ≥ 10.6** ou **MySQL ≥ 8** (serveur local ou conteneur Docker).  
-  _Un script SQL est fourni pour créer la base et les comptes._
+  _Un script SQL est fourni pour créer la base._
 
 ### 3.2 Initialisation de la base de données
 
@@ -78,23 +78,6 @@ mariadb -u root -p < scripts/setup_db.sql
 
 > **Sécurité :** changez immédiatement le mot de passe `password123` pour votre environnement.
 
-### 3.3 Installation rapide du projet
-
-```bash
-# Cloner le dépôt
-git clone https://github.com/<organisation>/<repo>.git
-cd <repo>
-
-# Restauration des dépendances (obligatoire)
-dotnet restore
-
-# Lancement direct du serveur API
-cd src/GameServer
-dotnet run
-```
-
-> ⚠️ La compilation explicite (`dotnet build`) est optionnelle ; **Visual Studio / VS Code** ou **Rider** géreront la build à l’exécution. En ligne de commande, `dotnet run` restaure, compile et exécute d’un seul coup.
-
 ---
 
 ## 4. Configuration
@@ -114,7 +97,7 @@ Chaque projet possède un fichier `appsettings.json`. Adaptez‑le à votre mote
 
 ### Problème de port : API ≠ 5181
 
-Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire si **5181** est occupé. Avant de démarrer le client web :
+Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire même si **5181** n'est pas occupé. Avant de démarrer le client web :
 
 1. Lancez `dotnet run --project src/GameServer` et notez le port réel affiché dans la console.
 2. Si le port n’est pas **5181**, modifiez les chemins suivants pour le refléter :
@@ -129,27 +112,18 @@ Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire
 
 ### Démarrage rapide (locaux)
 
-```bash
-# Server
-cd src/GameServer
-dotnet run
-
-# Client (Blazor WebAssembly)
-cd src/GameClient
-npm install && npm run dev
-```
+```à définir```
 
 ### Scénario principal
 
-1. **Créer un lobby** :
-   ```http
-   POST /api/lobbies { "name": "Demo" }
-   ```
-2. **Rejoindre** et **envoyer des ordres** via WebSocket :
-   ```js
-   const socket = new WebSocket("ws://localhost:5173/ws/lobby/1");
-   socket.send(JSON.stringify({ command: "Move", direction: "North" }));
-   ```
+1. **Se connecter **  :
+    Accéder à la page login
+2. **Rejoindre un lobby** :
+    Lors de l'arrivée sur la page "hub", cliquer sur le bouton matchmaking
+3. **Dans le jeu** :
+    Cliquer sur les boutons d'action puis sur envoyer lorsque vous avez effectué les actions souhaitées pendant le tour.
+4. **Répéter jusqu'à la fin du jeu** :
+    Le jeu prendra 6 tours pour arriver à la fin, chaque tour a un temps d'attente de 30 secondes avant d'être traité.
 
 ---
 
@@ -205,4 +179,4 @@ dotnet test --filter FullyQualifiedName~UnitTest1
 ## Licence & Crédits
 
 
-> © 2025 — Li Léo, Boukaouma Mokrane, Ciorba Antonio, Barois Ulysse
+> Li Léo, Boukaouma Mokrane, Ciorba Antonio, Barois Ulysse, Marie Julien
