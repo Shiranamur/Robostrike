@@ -26,6 +26,17 @@
 
 </div>
 
+<style>
+    body {
+        background-image: url(/images/Backgrounds/Background1.png);
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        height: 100vh;
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+</style>
 
 @code {
     public class Tile
@@ -76,7 +87,7 @@
         PlayerCommands = await JS.InvokeAsync<string>("eval", "document.getElementById('hudTextArea').value");
         Console.WriteLine($"playerCommands : {PlayerCommands}");
 
-        string url = $"http://localhost:5181/api/game/{gameId}/inputs";
+        string url = $"http://localhost:5000/api/game/{gameId}/inputs";
         var request = new HttpRequestMessage(HttpMethod.Put, url)
         {
             Content = new StringContent(JsonSerializer.Serialize(PlayerCommands), Encoding.UTF8, "application/json")
