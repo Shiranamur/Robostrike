@@ -128,7 +128,7 @@ Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire
 ---
 ## 6. Diagramme de séquence abrégé
 
-![](https://github.com/Shiranamur/Robostrike/blob/master/Ressources/sequence.svg)
+![](https://github.com/Shiranamur/Robostrike/blob/master/Ressources/sequence.png)
 
 ---
 
