@@ -17,7 +17,6 @@ public class Middleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // before the NEXT api call
         if (context.Request.Headers.TryGetValue("Authorization", out var authHeader) &&
             authHeader.ToString().StartsWith("Bearer "))
         {

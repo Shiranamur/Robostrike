@@ -23,7 +23,12 @@ builder.Services.AddSingleton<QueueManager>();
 builder.Services.AddSingleton<GameManager>();
 builder.Services.AddSingleton<MapHelper>();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSwaggerGen();
+}
+
 
 var connectionString = builder.Configuration.GetConnectionString("DBConnection");
 if (string.IsNullOrWhiteSpace(connectionString))

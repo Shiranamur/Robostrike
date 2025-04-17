@@ -475,10 +475,10 @@ namespace api
         public async Task<bool> StartGameAsync()
         {
             Console.WriteLine("Started the game !");
-            while (!GameOver && CurrentRound < _maxRounds) // continue game while not finished
+            while (!GameOver && CurrentRound < _maxRounds)
             {
                 Console.WriteLine($"Round : {CurrentRound}");
-                _currentRoundTurns = new List<TurnState>(); // Create new instead of clearing
+                _currentRoundTurns = new List<TurnState>();
                 
                 _roundInputs = new ConcurrentDictionary<int, Dictionary<int, char>>();
                 // wait inputs with timout
