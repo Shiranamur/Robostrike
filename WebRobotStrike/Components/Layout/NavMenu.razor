@@ -1,74 +1,97 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
+﻿<div class="top-row ps-3 navbar navbar-dark justify-content-between bg-black">
+    <div class="container-fluid d-flex align-items-center">
         <a class="navbar-brand" href="">WebRobotStrike</a>
+
+        <nav class="nav ms-auto align-items-center d-flex">
+
+            <div class="nav-item px-3">
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link text-light" href="" Match="NavLinkMatch.All">
+                    Home
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3 dropdown">
+                <NavLink class="nav-link text-light dropdown-toggle" href="map" id="mapDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Map
+                </NavLink>
+                <ul class="dropdown-menu" aria-labelledby="mapDropdown">
+                    <li>
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link text-light" href="map/editor" Match="NavLinkMatch.Prefix">
+                                Edit
+                            </NavLink>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link text-light" href="login" Match="NavLinkMatch.Prefix">
+                    Login
+                </NavLink>
+            </div>
+
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link text-light" href="register" Match="NavLinkMatch.Prefix">
+                    Register
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+            </div>
+
+        </nav>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="login">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Login
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="register">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Register
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3 dropdown">
-            <NavLink class="nav-link dropdown-toggle" href="map" id="mapDropdown" role="button">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Map
-            </NavLink>
-            <ul class="dropdown-menu" aria-labelledby="mapDropdown">
-                <li>
-                    <NavLink class="dropdown-item" href="map/editor">
-                        <span class="bi bi-pencil-fill" aria-hidden="true"></span> Éditeur de carte
-                    </NavLink>
-                </li>
-            </ul>
-        </div>
-    </nav>
-</div>
-
 <style>
-    /* Afficher le dropdown au survol */
+
+    .nav-link {
+        color: rgba(255, 255, 255, 0.8);
+        transition: color 0.3s ease;
+    }
+
+        .nav-link:hover {
+            color: #fff;
+            text-decoration: none;
+        }
+
+
+        .nav-link.active {
+            color: #fff;
+            font-weight: bold;
+        }
+
+
+    .dropdown-menu {
+        background-color: #212529;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dropdown-item {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+        .dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .dropdown-item.active, .dropdown-item:active {
+            background-color: var(--bs-primary);
+            color: #fff;
+        }
+
+
     .dropdown:hover .dropdown-menu {
         display: block;
     }
 
-    /* Style pour correspondre au thème sombre */
-    .dropdown-menu {
-        background-color: var(--bs-dark);
-        border: 1px solid rgba(255,255,255,0.1);
-    }
 
-    .dropdown-item {
-        color: rgba(255,255,255,0.7);
-    }
-
-    .dropdown-item:hover {
-        color: white;
-        background-color: rgba(255,255,255,0.1);
-    }
-
-    .dropdown-item.active,
-    .dropdown-item:active {
-        color: #fff;
-        background-color: var(--bs-primary);
-    }
-
-    /* Supprime la flèche du dropdown par défaut */
     .dropdown-toggle::after {
         display: none;
     }

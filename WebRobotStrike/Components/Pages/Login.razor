@@ -7,31 +7,55 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
-        <h3 class="text-center mb-4">Login</h3>
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="bg-dark bg-opacity-50 p-5 rounded shadow text-white w-50 main_content">
+        <h3 class="text-center mb-4 fw-bold">Login</h3>
 
+        <!-- Username input -->
         <div class="form-floating mb-3">
             <input @bind="username" class="form-control" id="username" placeholder="Username" />
             <label for="username">Username</label>
         </div>
 
+        <!-- Password input -->
         <div class="form-floating mb-3">
             <input type="password" @bind="password" class="form-control" id="password" placeholder="Password" />
             <label for="password">Password</label>
         </div>
 
-        <button class="btn btn-primary w-100" @onclick="HandleLogin">Sing in</button>
+        <!-- Login Button -->
+        <button class="btn btn-light w-100 rounded-pill fw-bold" @onclick="HandleLogin">Login</button>
 
+        <!-- Error Message -->
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger mt-3">@errorMessage</div>
         }
+
+        <!-- Links -->
+        <div class="text-center mt-3">
+            <p>Don't have an account? <a href="/register" class="text-white fw-bold text-decoration-none">Sign Up</a></p>
+            <p><a href="/" class="text-white fw-bold text-decoration-none">Back to Home</a></p>
+        </div>
     </div>
 </div>
 
+<style>
+    .main_content {
+        margin-top: 10%;
+        max-width: 400px;
+        width: 100%;
+    }
 
-
+    body {
+        background-image: url("images/Backgrounds/Background2.png");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        height: 100vh;
+        margin: 0;
+    }
+</style>
 
 @code {
     private string username;
@@ -40,7 +64,7 @@
 
     private async Task HandleLogin()
     {
-        // Basic debug: 
+        // Basic debug:
         Console.WriteLine("HandleLogin() called");
 
         // Validate user
@@ -58,10 +82,10 @@
             errorMessage = "User not found.";
             return;
         }
-        
+
         var token = await SessionService.CreateSessionTokenAsync(user.Id);
         await JS.InvokeVoidAsync("localStore.set", "sessionToken", token);
-        
+
         Navigation.NavigateTo("/hub");
     }
 }

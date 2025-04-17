@@ -6,21 +6,56 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<div class="hub-container">
-    <div class="hub-card">
-        <h1 class="mb-3">RoboStrike Hub</h1>
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh">
+    <div class="hub-card bg-dark bg-opacity-75 text-white p-5 rounded shadow-lg w-75 text-center">
+        <h1 class="mb-3 fw-bold">RoboStrike Hub</h1>
         <p class="mb-4">Find a game and jump straight in!</p>
+
         @if (!isInQueue)
         {
-            <button class="join-button" @onclick="JoinMatchmaking">Join Matchmaking</button>
+            <button class="btn btn-primary btn-lg w-50 mb-3" @onclick="JoinMatchmaking">Join Matchmaking</button>
         }
         else
         {
-            <p class="status-message">@statusMessage</p>
-            <button class="leave-button" @onclick="LeaveMatchmaking">Leave Matchmaking</button>
+            <p class="status-message mb-3">@statusMessage</p>
+            <button class="btn btn-danger btn-lg w-50" @onclick="LeaveMatchmaking">Leave Matchmaking</button>
         }
     </div>
 </div>
+
+<style>
+    .hub-card {
+        max-width: 500px;
+        width: 100%;
+        margin-top: 10%;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .status-message {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #ffcc00; /* A gold/yellow color for status messages */
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+    }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+</style>
+
 
 @code {
     private bool isInQueue = false;
@@ -81,126 +116,113 @@
         }
     }
 
-private async Task PollMatchStatus(CancellationToken token)
-{
-    statusMessage += "\n[Debug] PollMatchStatus() started.";
-    StateHasChanged();
-
-    while (!token.IsCancellationRequested)
+    private async Task PollMatchStatus(CancellationToken token)
     {
-        try
+        statusMessage += "\n[Debug] PollMatchStatus() started.";
+        StateHasChanged();
+
+        while (!token.IsCancellationRequested)
         {
-            // 1. Get the bearer token
-            var localToken = await GetTokenAsync();
-            if (string.IsNullOrWhiteSpace(localToken))
+            try
             {
-                statusMessage += "\n[Error] No token found while polling. Stopping.";
-                StateHasChanged();
-                isInQueue = false;
-                return;
-            }
-
-            // 2. Prepare the request
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5181/api/matchmaking/status");
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", localToken);
-
-            statusMessage += "\n[Debug] GET /api/matchmaking/status with Bearer token...";
-            StateHasChanged();
-
-            // 3. Send the request
-            var resp = await Http.SendAsync(request, token);
-            if (!resp.IsSuccessStatusCode)
-            {
-                statusMessage += $"\n[Error] Polling returned HTTP {resp.StatusCode}";
-                StateHasChanged();
-                isInQueue = false;
-                return;
-            }
-
-            // 4. Parse the JSON
-            var jsonString = await resp.Content.ReadAsStringAsync(token);
-            statusMessage += $"\n[Debug] Poll response: {jsonString}";
-            StateHasChanged();
-
-            // Expected JSON structure: 
-            //   {"status": { "map": {...}, "players":[...], "matchId":"..." }} or {"status":"No updates"}
-            using var doc = JsonDocument.Parse(jsonString);
-
-            if (doc.RootElement.TryGetProperty("status", out var statusEl))
-            {
-                if (statusEl.ValueKind == JsonValueKind.Object)
+                var localToken = await GetTokenAsync();
+                if (string.IsNullOrWhiteSpace(localToken))
                 {
-                    // 5. Found an object => likely means "matchId" is present
-                    if (statusEl.TryGetProperty("matchId", out var midEl))
+                    statusMessage += "\n[Error] No token found while polling. Stopping.";
+                    StateHasChanged();
+                    isInQueue = false;
+                    return;
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5181/api/matchmaking/status");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", localToken);
+
+                statusMessage += "\n[Debug] GET /api/matchmaking/status with Bearer token...";
+                StateHasChanged();
+
+                var resp = await Http.SendAsync(request, token);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    statusMessage += $"\n[Error] Polling returned HTTP {resp.StatusCode}";
+                    StateHasChanged();
+                    isInQueue = false;
+                    return;
+                }
+
+                var jsonString = await resp.Content.ReadAsStringAsync(token);
+                statusMessage += $"\n[Debug] Poll response: {jsonString}";
+                StateHasChanged();
+
+                using var doc = JsonDocument.Parse(jsonString);
+
+                if (doc.RootElement.TryGetProperty("status", out var statusEl))
+                {
+                    if (statusEl.ValueKind == JsonValueKind.Object)
                     {
-                        var matchId = midEl.GetString();
-                        if (!string.IsNullOrEmpty(matchId))
+                        if (statusEl.TryGetProperty("matchId", out var midEl))
                         {
-                            // 6. Deserialize the status element to a .NET object
-                            var statusObject = JsonSerializer.Deserialize<object>(statusEl.GetRawText());
-                            
-                            // Use JS interop to store the data via your helper:
-                            await JS.InvokeVoidAsync("window.localStore.setJson", "initialGameData", statusObject);
+                            var matchId = midEl.GetString();
+                            if (!string.IsNullOrEmpty(matchId))
+                            {
+                                var statusObject = JsonSerializer.Deserialize<object>(statusEl.GetRawText());
 
-                            statusMessage += $"\n[Debug] Match found: {matchId}. Navigating to /game/{matchId}";
+                                await JS.InvokeVoidAsync("window.localStore.setJson", "initialGameData", statusObject);
+
+                                statusMessage += $"\n[Debug] Match found: {matchId}. Navigating to /game/{matchId}";
+                                StateHasChanged();
+
+                                isInQueue = false;
+
+                                Nav.NavigateTo($"/game");
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            statusMessage += "\n[Debug] 'status' object found, but no 'matchId' property.";
                             StateHasChanged();
-
-                            // Mark ourselves as no longer in queue
-                            isInQueue = false;
-
-                            // 7. Navigate to the game page
-                            Nav.NavigateTo($"/game");
-                            return; // exit the loop
                         }
                     }
                     else
                     {
-                        statusMessage += "\n[Debug] 'status' object found, but no 'matchId' property.";
-                        StateHasChanged();
+                        var str = statusEl.GetString();
+                        if (str?.Contains("No updates") == true)
+                        {
+                            statusMessage += "\n[Debug] No updates yet, still polling...";
+                            StateHasChanged();
+                        }
+                        else if (str?.Contains("Request canceled") == true)
+                        {
+                            statusMessage += "\n[Debug] Request canceled by server.";
+                            StateHasChanged();
+                            isInQueue = false;
+                            return;
+                        }
+                        else
+                        {
+                            statusMessage += "\n[Debug] status: " + str;
+                            StateHasChanged();
+                        }
                     }
                 }
-                else
-                {
-                    // Could be "No updates" or "Request canceled"
-                    var str = statusEl.GetString();
-                    if (str?.Contains("No updates") == true)
-                    {
-                        statusMessage += "\n[Debug] No updates yet, still polling...";
-                        StateHasChanged();
-                    }
-                    else if (str?.Contains("Request canceled") == true)
-                    {
-                        statusMessage += "\n[Debug] Request canceled by server.";
-                        StateHasChanged();
-                        isInQueue = false;
-                        return;
-                    }
-                    else
-                    {
-                        statusMessage += "\n[Debug] status: " + str;
-                        StateHasChanged();
-                    }
-                }
-            }
 
-            // Wait a bit before polling again
-            await Task.Delay(2000, token);
-        }
-        catch (TaskCanceledException)
-        {
-            statusMessage += "\n[Debug] Polling canceled.";
-            StateHasChanged();
-            return;
-        }
-        catch (Exception ex)
-        {
-            statusMessage += $"\n[Exception] Polling error: {ex.Message}";
-            StateHasChanged();
-            isInQueue = false;
-            return;
+                await Task.Delay(2000, token);
+            }
+            catch (TaskCanceledException)
+            {
+                statusMessage += "\n[Debug] Polling canceled.";
+                StateHasChanged();
+                return;
+            }
+            catch (Exception ex)
+            {
+                statusMessage += $"\n[Exception] Polling error: {ex.Message}";
+                StateHasChanged();
+                isInQueue = false;
+                return;
+            }
         }
     }
-}
 
 
     // Leave matchmaking
