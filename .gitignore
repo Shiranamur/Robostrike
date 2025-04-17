@@ -5,6 +5,7 @@ riderModule.iml
 /_ReSharper.Caches/
 
 # Rider IDE
+.idea
 .idea/
 .idea/
 .idea/tiz_teh_final_csharp_project.iml

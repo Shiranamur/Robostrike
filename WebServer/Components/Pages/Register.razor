@@ -1,0 +1,102 @@
+@page "/register"
+@inject BlazorApp1.UsersServices.UsersService UsersService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh">
+    <div class="bg-dark bg-opacity-50 p-5 rounded shadow text-white w-50 main_content">
+        <h3 class="text-center mb-4 fw-bold">Sign Up</h3>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <form @onsubmit="HandleSubmit">
+            <div class="form-floating mb-3">
+                <input @bind="username" class="form-control" id="registerUsername" placeholder="Username" />
+                <label for="registerUsername">Username</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input @bind="email" type="email" class="form-control" id="registerEmail" placeholder="Email" />
+                <label for="registerEmail">Email</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" @bind="password" class="form-control" id="registerPassword" placeholder="Password" />
+                <label for="registerPassword">Password</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" @bind="confirmPassword" class="form-control" id="registerConfirmPassword" placeholder="Confirm Password" />
+                <label for="registerConfirmPassword">Confirm Password</label>
+            </div>
+
+            <button type="submit" class="btn btn-light w-100 rounded-pill fw-bold">Sign Up</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <p>Already have an account? <a href="/login" class="text-white fw-bold text-decoration-none">Sign In</a></p>
+            <p><a href="/" class="text-white fw-bold text-decoration-none">Back to Home</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .main_content {
+        margin-top: 10%;
+        max-width: 400px; /* Limit the width for better responsiveness */
+        width: 100%;
+    }
+
+    body {
+        background-image: url("images/Backgrounds/Background2.png");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        height: 100vh;
+        margin: 0;
+    }
+</style>
+
+@code {
+    private string username;
+    private string email;
+    private string password;
+    private string confirmPassword;
+    private string errorMessage = "";
+
+    private async Task HandleRegister()
+    {
+        if (password != confirmPassword)
+        {
+            errorMessage = "Les mots de passe ne correspondent pas.";
+            return;
+        }
+
+        var existingUser = await UsersService.TestUsername(username);
+        if (existingUser)
+        {
+            errorMessage = "Ce nom d'utilisateur est déjà pris.";
+            return;
+        }
+
+        var salt = Guid.NewGuid().ToString();
+
+        var passwordHash = Convert.ToBase64String(
+            System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(password + salt))
+        );
+
+        await UsersService.New_User(username, email, false, passwordHash, salt, 0);
+
+        errorMessage = "";
+        Navigation.NavigateTo("/login");
+    }
+    private async Task HandleSubmit()
+    {
+        await HandleRegister();
+    }
+
+}
