@@ -126,7 +126,7 @@ Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire
     Le jeu prendra 6 tours pour arriver à la fin, chaque tour a un temps d'attente de 30 secondes avant d'être traité.
 
 ---
-## 6. Diagramme de séquence abrégé
+## 6. Diagramme de séquence
 
 ![](https://github.com/Shiranamur/Robostrike/blob/master/Ressources/sequence.png)
 
