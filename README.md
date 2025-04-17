@@ -126,12 +126,17 @@ Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire
     Le jeu prendra 6 tours pour arriver à la fin, chaque tour a un temps d'attente de 30 secondes avant d'être traité.
 
 ---
+## 6. Diagramme de séquence abrégé
 
-## 6. API / Référence
+![](https://github.com/Shiranamur/Robostrike/blob/master/Ressources/sequence.svg)
+
+---
+
+## 7. API / Référence
 
 > Tous les endpoints ci‑dessous exigent l’entête HTTP `Authorization: Bearer <token>` ; le **Middleware** extrait `UserId` depuis le JWT et l’injecte dans `HttpContext.Items`.
 
-### 6.1 Matchmaking
+### 7.1 Matchmaking
 
 | Méthode | Route                           | Description                                   | Corps / Query | Réponse 200 |
 |---------|---------------------------------|-----------------------------------------------|---------------|-------------|
@@ -139,14 +144,14 @@ Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire
 | `GET`   | `/api/matchmaking/leave`        | Retire le joueur de la file d’attente.        | — | `{ Message:"Dequeued successfully" }` |
 | `GET`   | `/api/matchmaking/status`       | Long‑polling : notifie quand la partie démarre ou expire après 30 s. | — | `{ Status:"<gameId>" }` ou `{ Status:"No updates" }` |
 
-### 6.2 Jeu
+### 7.2 Jeu
 
 | Méthode | Route                                   | Description                                       | Corps JSON                   | Réponse 200 |
 |---------|-----------------------------------------|---------------------------------------------------|------------------------------|-------------|
 | `PUT`   | `/api/game/{gameId}/inputs`             | Soumet les **6 premiers** inputs du joueur pour le tour en cours. | "FFLRRB" (string) | "Moves Submitted" |
 | `GET`   | `/api/game/{gameId}/status`             | Récupère l’état courant : round, drapeau `GameOver`. | — | `{ Status:{ Round:{ … }, GameOver:false } }` |
 
-### 6.3 Carte
+### 7.3 Carte
 
 | Méthode | Route  | Description                               | Corps JSON (extrait)   | Réponse 200 |
 |---------|--------|-------------------------------------------|------------------------|-------------|
@@ -154,7 +159,7 @@ Sur certains systèmes, le **serveur API** peut se lancer sur un port aléatoire
 
 ---
 
-## 7. Tests
+## 8. Tests
 
 ### Exécuter la suite de tests
 
